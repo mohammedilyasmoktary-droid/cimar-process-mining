@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CIMAR — Process Mining Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f5f4;--bg2:#ffffff;--bg3:#f0f2f0;--bg4:#e8ede9;
+  --green:#004e2b;--green2:#1a6b35;--green3:#5eac2c;
+  --border:#d8e2d9;--border2:#b8ccba;
+  --text:#1a2e1c;--textm:#4a6b4e;--textd:#8aaa8e;
+  --red:#c0392b;--amber:#b7770d;--white:#ffffff;
+}
+html,body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:13px;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* TOPBAR */
+#topbar{position:fixed;top:0;left:0;right:0;height:44px;background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;z-index:200;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+#topbar-logo{width:240px;min-width:240px;display:flex;align-items:center;gap:10px;padding:0 20px;border-right:1px solid var(--border);height:100%;flex-shrink:0}
+#topbar-logo-text .brand{font-size:11px;font-weight:600;color:var(--green);letter-spacing:.08em;text-transform:uppercase}
+#topbar-logo-text .sub{font-size:9px;color:var(--textd);letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+#topbar-ticker{flex:1;display:flex;align-items:center;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11px}
+.tick-item{display:flex;align-items:center;gap:6px;padding:0 16px;border-right:1px solid var(--border);height:44px;white-space:nowrap}
+.tick-label{color:var(--textd);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.tick-val{color:var(--green);font-weight:500;font-size:12px}
+#topbar-right{padding:0 12px 0 16px;display:flex;align-items:center;gap:10px;border-left:1px solid var(--border);height:100%;flex-shrink:0;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--textm)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green3);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* SIDEBAR */
+#sidebar{width:240px;min-width:240px;background:#fff;border-right:1px solid var(--border);position:fixed;top:44px;left:0;bottom:0;display:flex;flex-direction:column;z-index:100;overflow-y:auto}
+.sidebar-section{padding:14px 0 8px;border-bottom:1px solid var(--border)}
+.sidebar-section-label{font-size:9px;color:var(--textd);letter-spacing:.14em;text-transform:uppercase;padding:0 20px;margin-bottom:8px;font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;font-size:12px;color:var(--textm);border-left:2px solid transparent;transition:all .15s}
+.nav-item:hover{color:var(--green);background:rgba(0,78,43,.04)}
+.nav-item.active{color:var(--green);background:rgba(0,78,43,.07);border-left:2px solid var(--green)}
+.nav-icon{font-size:13px;width:16px;text-align:center}
+.sidebar-stat{padding:8px 20px;display:flex;justify-content:space-between;align-items:center}
+.ss-label{font-size:11px;color:var(--textm)}
+.ss-val{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500}
+.ss-val.red{color:var(--red)}.ss-val.green{color:var(--green)}.ss-val.amber{color:var(--amber)}
+.upload-btn{width:100%;padding:9px 0;background:var(--green);border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;transition:background .15s}
+.upload-btn:hover{background:var(--green2)}
+
+/* MAIN */
+#main{margin-left:240px;padding-top:44px;min-height:100vh;background:var(--bg)}
+.page{display:none}.page.active{display:block}
+.page-content{padding:28px 32px}
+.page-header{margin-bottom:24px}
+.page-header h1{font-size:18px;font-weight:500;color:var(--text)}
+.page-header p{font-size:11px;color:var(--textm);margin-top:4px;font-family:'IBM Plex Mono',monospace}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-bottom:20px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.kpi-card{background:#fff;padding:22px 24px;display:flex;flex-direction:column;gap:6px}
+.kpi-card.highlight{background:#f8fdf8}
+.kpi-top-label{font-size:9px;color:var(--textm);text-transform:uppercase;letter-spacing:.12em;font-weight:600}
+.kpi-big-val{font-family:'IBM Plex Mono',monospace;font-size:32px;font-weight:500;color:var(--green);letter-spacing:-.02em;line-height:1}
+.kpi-sub{font-size:10px;color:var(--textm);margin-top:2px}
+.kpi-delta{font-family:'IBM Plex Mono',monospace;font-size:11px;margin-top:4px}
+.kpi-delta.neg{color:var(--red)}.kpi-delta.pos{color:var(--green3)}
+
+/* CARDS */
+.card{background:#fff;border:1px solid var(--border);border-radius:6px;padding:20px 22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:4px}
+.card-sub{font-size:10px;color:var(--textm);font-family:'IBM Plex Mono',monospace;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+
+/* TABLES */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:8px 12px;color:var(--textd);text-transform:uppercase;letter-spacing:.08em;font-size:10px;border-bottom:1px solid var(--border);font-weight:500}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:hover td{background:rgba(0,78,43,.02)}
+
+/* BARS */
+.mbar-wrap{background:var(--bg3);border-radius:2px;overflow:hidden}
+.mbar-fill{border-radius:2px;transition:width .6s}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:500;font-family:'IBM Plex Mono',monospace}
+.bc{background:rgba(192,57,43,.1);color:#c0392b;border:1px solid rgba(192,57,43,.25)}
+.bw{background:rgba(183,119,13,.1);color:#b7770d;border:1px solid rgba(183,119,13,.25)}
+.bg{background:rgba(0,78,43,.1);color:#004e2b;border:1px solid rgba(0,78,43,.2)}
+.bm{background:var(--bg3);color:var(--textm);border:1px solid var(--border)}
+
+/* D3 PROCESS MAP */
+#dfg-container{width:100%;height:580px;background:var(--bg3);border-radius:6px;overflow:hidden;position:relative;cursor:grab}
+#dfg-container:active{cursor:grabbing}
+#dfg-container svg{width:100%;height:100%}
+.dfg-node{cursor:pointer;transition:filter .2s}
+.dfg-node:hover{filter:brightness(0.92)}
+.dfg-tooltip{position:absolute;background:#fff;border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-size:11px;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.12);z-index:50;max-width:200px;display:none}
+.dfg-tooltip.show{display:block}
+.zoom-controls{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:10}
+.zoom-btn{width:28px;height:28px;background:#fff;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--textm);transition:all .15s}
+.zoom-btn:hover{background:var(--bg3);color:var(--green)}
+
+/* HEATMAP */
+#heatmap-container{width:100%;overflow-x:auto}
+.heatmap-grid{display:grid;gap:2px;padding:4px}
+.hm-cell{border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:'IBM Plex Mono',monospace;color:#fff;font-weight:500;cursor:pointer;transition:transform .15s}
+.hm-cell:hover{transform:scale(1.08);z-index:5;position:relative}
+.hm-label{font-size:10px;color:var(--textm);font-family:'IBM Plex Mono',monospace;padding:4px 8px;white-space:nowrap}
+
+/* SIGNAL */
+.signal-card{display:flex;align-items:center;gap:12px;padding:10px 16px;border-radius:4px;background:rgba(0,78,43,.06);border:1px solid rgba(0,78,43,.15);font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--green);margin-bottom:16px}
+.signal-dot{width:8px;height:8px;border-radius:50%;background:var(--green3);box-shadow:0 0 5px rgba(94,172,44,.4)}
+
+/* VARIANT EXPLORER */
+.variant-card{background:#fff;border:1px solid var(--border);border-radius:6px;padding:14px 18px;margin-bottom:10px;cursor:pointer;transition:all .15s}
+.variant-card:hover{border-color:var(--green);box-shadow:0 2px 8px rgba(0,78,43,.08)}
+.variant-card.selected{border-color:var(--green);background:rgba(0,78,43,.03)}
+.variant-flow{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:8px}
+.vf-node{padding:3px 8px;border-radius:3px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:500;white-space:nowrap}
+.vf-arrow{color:var(--textd);font-size:11px}
+
+/* DRAG-AND-DROP BUILDER */
+#builder-canvas{width:100%;height:560px;background:#fafcfa;border:1px solid var(--border);border-radius:6px;position:relative;overflow:hidden}
+#builder-canvas svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+#builder-canvas svg.interactive{pointer-events:all}
+.builder-node{position:absolute;width:160px;min-height:56px;background:#fff;border:1.5px solid var(--border2);border-radius:8px;cursor:move;user-select:none;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:box-shadow .15s,border-color .15s;z-index:10}
+.builder-node:hover{box-shadow:0 4px 16px rgba(0,0,0,.14);border-color:var(--green3)}
+.builder-node.selected{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,78,43,.15)}
+.builder-node.bottleneck{border-color:var(--red)}
+.builder-node .node-title{font-size:12px;font-weight:500;color:var(--text);line-height:1.3}
+.builder-node .node-meta{font-size:10px;color:var(--textm);margin-top:3px;font-family:'IBM Plex Mono',monospace}
+.builder-node .node-del{position:absolute;top:4px;right:6px;font-size:14px;color:var(--textd);cursor:pointer;line-height:1;opacity:0;transition:opacity .15s}
+.builder-node:hover .node-del{opacity:1}
+.builder-node .port{position:absolute;width:10px;height:10px;background:var(--green3);border:2px solid #fff;border-radius:50%;cursor:crosshair;z-index:20}
+.builder-node .port.out{bottom:-5px;left:50%;transform:translateX(-50%)}
+.builder-node .port.in{top:-5px;left:50%;transform:translateX(-50%)}
+.builder-toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.tb-btn{padding:7px 14px;background:#fff;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px;color:var(--text);font-family:'Inter',sans-serif;transition:all .15s;display:flex;align-items:center;gap:6px}
+.tb-btn:hover{border-color:var(--green);color:var(--green);background:rgba(0,78,43,.03)}
+.tb-btn.primary{background:var(--green);color:#fff;border-color:var(--green)}
+.tb-btn.primary:hover{background:var(--green2)}
+.tb-btn.danger{border-color:var(--red);color:var(--red)}
+.tb-btn.danger:hover{background:rgba(192,57,43,.05)}
+.node-palette{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.palette-item{padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:11px;color:var(--textm);transition:all .15s;user-select:none}
+.palette-item:hover{border-color:var(--green3);color:var(--green);background:rgba(0,78,43,.04)}
+
+/* COMPARISON */
+.compare-container{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.compare-panel{background:#fff;border:1px solid var(--border);border-radius:6px;padding:20px}
+.compare-title{font-size:13px;font-weight:500;margin-bottom:4px}
+.compare-sub{font-size:10px;color:var(--textm);font-family:'IBM Plex Mono',monospace;margin-bottom:16px}
+.diff-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;margin-bottom:6px;font-size:12px}
+.diff-item.missing{background:rgba(192,57,43,.07);border:1px solid rgba(192,57,43,.2);color:var(--red)}
+.diff-item.extra{background:rgba(183,119,13,.07);border:1px solid rgba(183,119,13,.2);color:var(--amber)}
+.diff-item.match{background:rgba(0,78,43,.05);border:1px solid rgba(0,78,43,.15);color:var(--green)}
+
+/* REC CARDS */
+.rec-card{background:#fff;border:1px solid var(--border);border-radius:6px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.rec-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:14px 0}
+.rbox{background:var(--bg3);border-radius:4px;padding:12px 14px;border:1px solid var(--border)}
+.rbox-lbl{font-size:9px;color:var(--textd);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:600}
+.rbox-txt{font-size:12px;color:var(--text);line-height:1.7;white-space:pre-line}
+.impact-row{padding:9px 14px;border-radius:4px;background:rgba(0,78,43,.05);border:1px solid rgba(0,78,43,.12);font-size:12px;color:var(--green)}
+
+/* MODAL */
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(20,40,25,.5);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-ov.open{display:flex}
+.modal{background:#fff;border:1px solid var(--border);border-radius:8px;padding:32px;width:460px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+.drop-z{display:block;border:2px dashed var(--border2);border-radius:6px;padding:32px;text-align:center;cursor:pointer;background:var(--bg3)}
+.drop-z:hover{border-color:var(--green)}
+canvas{display:block;width:100%}
+
+/* NODE EDIT PANEL */
+.node-edit-panel{background:#fff;border:1px solid var(--border);border-radius:6px;padding:16px;margin-top:12px;display:none}
+.node-edit-panel.open{display:block}
+.field-group{margin-bottom:12px}
+.field-label{font-size:10px;color:var(--textd);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;font-weight:600}
+.field-input{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:'Inter',sans-serif;color:var(--text);background:#fff;outline:none;transition:border-color .15s}
+.field-input:focus{border-color:var(--green)}
+select.field-input{cursor:pointer}
+
+/* GANTT */
+.gantt-wrap{overflow-x:auto;padding-bottom:8px}
+.gantt-row{display:flex;align-items:center;gap:0;margin-bottom:3px;min-width:800px}
+.gantt-label{width:130px;min-width:130px;font-size:10px;color:var(--textm);text-align:right;padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-track{flex:1;height:22px;background:var(--bg3);border-radius:2px;position:relative}
+.gantt-bar{position:absolute;height:100%;border-radius:2px;top:0;transition:opacity .2s}
+.gantt-bar:hover{opacity:.8;cursor:pointer}
+.gantt-time-axis{display:flex;min-width:800px;margin-bottom:4px}
+.gantt-time-label{font-size:9px;color:var(--textd);font-family:'IBM Plex Mono',monospace;flex:1;text-align:center}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <div id="topbar-logo">
+    <div id="topbar-logo-text">
+      <div class="brand">Process Mining</div>
+      <div class="sub">Lab Workflow Intelligence</div>
+    </div>
+  </div>
+  <div id="topbar-ticker">
+    <div class="tick-item"><span class="tick-label">Cases</span><span class="tick-val" id="tk-cases">1,000</span></div>
+    <div class="tick-item"><span class="tick-label">Avg Cycle</span><span class="tick-val" id="tk-cycle">6.3h</span></div>
+    <div class="tick-item"><span class="tick-label">Rework</span><span class="tick-val" id="tk-rework" style="color:#c0392b">25.3%</span></div>
+    <div class="tick-item"><span class="tick-label">Bottleneck</span><span class="tick-val" id="tk-bn" style="color:#b7770d">Approval</span></div>
+    <div class="tick-item"><span class="tick-label">P90</span><span class="tick-val" id="tk-p90" style="color:#b7770d">13.2h</span></div>
+    <div class="tick-item"><span class="tick-label">Plants</span><span class="tick-val">4</span></div>
+  </div>
+  <div id="topbar-right">
+    <div class="live-dot"></div>
+    <span id="tk-period" style="color:var(--textd)">Sample Data · 2026</span>
+    <div style="width:1px;height:24px;background:var(--border);margin:0 4px"></div>
+    <div style="height:32px;display:flex;align-items:center">
+      <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 500" style="height:26px;width:auto">
+        <style>.s0{fill:#5eac2c}.s1{fill:#004e2b}.s2{fill:#004c2f}</style>
+        <g><g><g>
+          <path class="s0" d="m250.74 388.77c10.56 0 59.27 0 70.47 0v-60.44c-10.76 29.76-56 60.44-70.47 60.44z"/>
+          <path fill-rule="evenodd" class="s1" d="m333.92 259.11v142.19h-140.3c-58.94 0-106.72-47.78-106.72-106.72v-195.88h79.73c109.27 0 167.29 71.82 167.29 160.41zm-23.62-57.89c-24.8-54.93-65.07-90.42-154.89-90.42h-55.79v126.82c15.33-26.97 42.76-36.82 52.16-39.5 0 0 0.73-0.2 2-0.49 12.68-2.61 61.97-9.23 88.22 37.73 4.23 9.91 5.76 18.85 5.45 26.84-0.74 33.33-29.89 61.09-63.3 60.26-25.52-0.63-48.15-24.85-46.98-50.26 1.02-22.17 24.89-40.45 46.61-35.69 13.88 3.04 23.62 17.17 21.63 31.37-1.72 12.22-11.77 20.44-23.97 19.25-7.98-0.77-14.11-4.42-15.64-12.94-1.62-9.49 12.44-12.28 14.62-2.9 0.28 1.18 1.33 2.01 2.55 2.03 5.18 0.08 8.68-2.44 8.89-8.55 0.3-8.67-4.72-14.29-14.08-15.18-16.27-1.54-29.27 13.14-26.51 29.25 3.32 19.44 21.41 32.47 41.03 29.3 33.84-5.46 50.88-39.48 35.79-71.45-15.13-32.08-50.25-45.16-84.74-31.56-46.49 18.32-62.03 69.42-42.54 116.11 24.84 51.52 85.05 71.74 141.08 47.39 67.38-29.29 90.21-105.44 63.02-177.28z"/>
+        </g><g>
+          <path class="s2" d="m734.31 382.35v-39.27h7.74l13.18 19.75 13.41-19.75h7.52v39.27h-8.19v-25.47l-10.94 15.93h-3.59l-10.94-15.93v25.47z"/>
+          <path class="s2" d="m572.51 382.35v-41.51h7.74v41.51z"/>
+          <path class="s2" d="m959.64 382.35v-41.51h7.74v41.51z"/>
+        </g><g>
+          <path class="s1" d="m423.95 246.98q2.51-2.61 5.94-3.96 3.44-1.36 7.3-1.36 4.55 0 8.27 1.84 3.72 1.84 6.72 5.12l10.15-11.5q-4.01-2.46-8.65-3.72-4.65-1.26-9.48-1.26-7.64 0-14.16 2.61-6.53 2.61-11.36 7.35-4.84 4.74-7.5 11.12-2.66 6.38-2.65 13.92 0 7.64 2.56 14.07 2.56 6.43 7.25 11.12 4.69 4.69 11.12 7.25 6.43 2.56 14.06 2.56 5.03 0 9.91-1.21 4.88-1.21 8.9-3.33 4.01-2.13 6.33-4.74l-8.02-12.76q-1.75 1.93-4.16 3.48-2.42 1.54-5.17 2.37-2.76 0.82-5.76 0.82-4.54 0-8.26-1.36-3.73-1.35-6.38-3.91-2.66-2.56-4.06-6.19-1.41-3.62-1.41-8.07 0-4.55 1.45-8.12 1.45-3.58 3.97-6.19z"/>
+          <path class="s1" d="m1049.36 259l-19.34-31.45h-14.79v67.67h16.15v-20.49q0-9.67-0.44-16.58l15.13 23.78h6.57l15.69-24.3q-0.44 7.1-0.44 16v20.49h16.05v-67.67h-14.31z"/>
+        </g></g></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div id="sidebar">
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Navigation</div>
+    <div class="nav-item active" data-page="dashboard"><span class="nav-icon">▦</span> Dashboard</div>
+    <div class="nav-item" data-page="processmap"><span class="nav-icon">⬡</span> Process Map</div>
+    <div class="nav-item" data-page="variants"><span class="nav-icon">⊕</span> Variants</div>
+    <div class="nav-item" data-page="heatmap"><span class="nav-icon">▣</span> Heatmap</div>
+    <div class="nav-item" data-page="bottlenecks"><span class="nav-icon">△</span> Bottlenecks</div>
+    <div class="nav-item" data-page="rework"><span class="nav-icon">↻</span> Rework</div>
+    <div class="nav-item" data-page="builder"><span class="nav-icon">✦</span> Process Builder</div>
+    <div class="nav-item" data-page="compare"><span class="nav-icon">⇄</span> Comparison</div>
+    <div class="nav-item" data-page="recommendations"><span class="nav-icon">◈</span> Recommendations</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Key Metrics</div>
+    <div class="sidebar-stat"><span class="ss-label">Total samples</span><span class="ss-val green" id="ss-cases">1,000</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Avg cycle time</span><span class="ss-val amber" id="ss-cycle">6.3h</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Rework rate</span><span class="ss-val red" id="ss-rework">25.3%</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Max case</span><span class="ss-val red" id="ss-max">38.3h</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Clean cases</span><span class="ss-val green" id="ss-clean">74.7%</span></div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Plants</div>
+    <div class="sidebar-stat"><span class="ss-label">Casablanca</span><span class="ss-val green">4.7h avg</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Safi</span><span class="ss-val green">5.4h avg</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Agadir</span><span class="ss-val amber">6.6h avg</span></div>
+    <div class="sidebar-stat"><span class="ss-label">Marrakech</span><span class="ss-val red">8.6h avg</span></div>
+  </div>
+  <div style="padding:16px 20px;margin-top:auto;border-top:1px solid var(--border)">
+    <button class="upload-btn" onclick="document.getElementById('um').classList.add('open')">↑ Upload CSV</button>
+    <div style="margin-top:10px;font-size:10px;color:var(--textd);line-height:1.7;font-family:'IBM Plex Mono',monospace">Embedded sample data<br>1,000 cases · Jan–Apr 2026</div>
+  </div>
+</div>
+
+<div id="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+<div class="page-content">
+  <div class="page-header">
+    <h1>Lab Workflow Overview</h1>
+    <p id="ph-period">Ciments du Maroc · 4 plants · 2026-01-01 → 2026-04-02 · 1,000 samples</p>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-top-label">Total Samples</div><div class="kpi-big-val" id="kpi-cases">1,000</div><div class="kpi-sub">cases · 7,778 events</div><div class="kpi-delta pos">↑ Jan–Apr 2026</div></div>
+    <div class="kpi-card"><div class="kpi-top-label">Avg Cycle Time</div><div class="kpi-big-val" id="kpi-cycle">6.3h</div><div class="kpi-sub" id="kpi-cycle-sub">median 5.0h · P90 13.2h</div><div class="kpi-delta neg">▲ above 6h threshold</div></div>
+    <div class="kpi-card highlight"><div class="kpi-top-label">Rework Rate</div><div class="kpi-big-val" id="kpi-rework" style="color:var(--red)">25.3%</div><div class="kpi-sub" id="kpi-rework-sub">253 cases required retest</div><div class="kpi-delta neg">▲ +10.3pp above threshold</div></div>
+    <div class="kpi-card"><div class="kpi-top-label">Primary Bottleneck</div><div class="kpi-big-val" style="font-size:20px;margin-top:4px;color:var(--amber)" id="kpi-bn">Approval</div><div class="kpi-sub">198 min avg · P90 423 min</div><div class="kpi-delta neg">▲ 3.3h above threshold</div></div>
+  </div>
+  <div class="signal-card"><div class="signal-dot"></div><span style="color:var(--textm);font-size:10px;text-transform:uppercase;letter-spacing:.08em">Active Signal —</span><span id="signal-txt">4 recommendations · 2 critical issues · Marrakech flagged</span></div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Activity Wait Times</div><div class="card-sub">Average minutes at each stage</div><div id="wait-bars"></div></div>
+    <div class="card"><div class="card-title">Case Duration Distribution</div><div class="card-sub">Cases by total cycle time</div><canvas id="c-dur" height="190"></canvas><div style="display:flex;gap:24px;margin-top:12px;font-family:'IBM Plex Mono',monospace"><div><div style="font-size:9px;color:var(--textm);text-transform:uppercase">Avg</div><div style="font-size:15px;font-weight:500" id="dur-avg">6.3h</div></div><div><div style="font-size:9px;color:var(--textm);text-transform:uppercase">P90</div><div style="font-size:15px;font-weight:500;color:var(--amber)" id="dur-p90">13.2h</div></div><div><div style="font-size:9px;color:var(--textm);text-transform:uppercase">Max</div><div style="font-size:15px;font-weight:500;color:var(--red)" id="dur-max">38.3h</div></div></div></div>
+  </div>
+  <div class="card"><div class="card-title">Plant Performance</div><div class="card-sub">Avg cycle time and rework rate per site</div><table><thead><tr><th>Plant</th><th>Cases</th><th>Avg Duration</th><th>Rework Rate</th><th>vs Network</th><th style="width:130px">Speed</th></tr></thead><tbody id="plant-tbl"></tbody></table></div>
+</div>
+</div>
+
+<!-- PROCESS MAP (D3 Interactive) -->
+<div class="page" id="page-processmap">
+<div class="page-content">
+  <div class="page-header"><h1>Interactive Process Map</h1><p>D3 force-directed graph · zoom + pan · hover for metrics · click nodes to isolate</p></div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <select id="dfg-filter-plant" class="field-input" style="width:140px" onchange="renderDFG()">
+      <option value="all">All Plants</option>
+      <option value="Safi">Safi</option>
+      <option value="Agadir">Agadir</option>
+      <option value="Marrakech">Marrakech</option>
+      <option value="Casablanca">Casablanca</option>
+    </select>
+    <button class="tb-btn" onclick="resetDFGZoom()">⌖ Reset View</button>
+    <button class="tb-btn" onclick="toggleDFGLayout()">⇅ Toggle Layout</button>
+    <div style="display:flex;align-items:center;gap:16px;margin-left:auto;font-size:11px">
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:#22883f;display:inline-block"></span>Fast (&lt;30m)</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:#b7770d;display:inline-block"></span>Moderate (30-90m)</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:12px;height:12px;border-radius:2px;background:#c0392b;display:inline-block"></span>Bottleneck (&gt;90m)</span>
+    </div>
+  </div>
+  <div id="dfg-container">
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="dfgZoomIn()">+</button>
+      <button class="zoom-btn" onclick="dfgZoomOut()">−</button>
+      <button class="zoom-btn" onclick="resetDFGZoom()" style="font-size:11px">⌖</button>
+    </div>
+    <div class="dfg-tooltip" id="dfg-tooltip"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+    <div class="card"><div class="card-title">Edge Statistics</div><div class="card-sub">Transition frequencies and avg wait times</div><table><thead><tr><th>From</th><th>To</th><th style="text-align:right">Count</th><th style="text-align:right">Avg Time</th></tr></thead><tbody id="edge-tbl"></tbody></table></div>
+    <div class="card"><div class="card-title">Node Metrics</div><div class="card-sub">Click a node in the map to see its details</div><div id="node-detail" style="font-size:12px;color:var(--textm);padding:20px 0;text-align:center">Click any node in the process map above</div></div>
+  </div>
+</div>
+</div>
+
+<!-- VARIANTS -->
+<div class="page" id="page-variants">
+<div class="page-content">
+  <div class="page-header"><h1>Process Variant Explorer</h1><p>Top 6 distinct process paths discovered from event log · click to highlight</p></div>
+  <div class="grid2">
+    <div>
+      <div class="card" style="padding:12px 16px;margin-bottom:12px">
+        <div style="display:flex;gap:16px;font-size:11px;font-family:'IBM Plex Mono',monospace">
+          <span style="color:var(--textm)">Total variants:</span><span style="color:var(--green);font-weight:500">6</span>
+          <span style="color:var(--textm)">Happy path:</span><span style="color:var(--green);font-weight:500">70.5%</span>
+          <span style="color:var(--textm)">With rework:</span><span style="color:var(--red);font-weight:500">25.3%</span>
+        </div>
+      </div>
+      <div id="variant-list"></div>
+    </div>
+    <div>
+      <div class="card" style="height:380px">
+        <div class="card-title">Variant Flow Diagram</div>
+        <div class="card-sub">Select a variant to visualise its path</div>
+        <div id="variant-dfg" style="height:280px;position:relative;overflow:hidden"></div>
+      </div>
+      <div class="card" style="margin-top:0">
+        <div class="card-title">Duration Comparison</div>
+        <canvas id="c-variant-dur" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- HEATMAP -->
+<div class="page" id="page-heatmap">
+<div class="page-content">
+  <div class="page-header"><h1>Bottleneck Heatmap</h1><p>Transition delay intensity across activities and plants · darker = longer wait</p></div>
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+    <select id="hm-metric" class="field-input" style="width:160px" onchange="renderHeatmap()">
+      <option value="avg">Avg Wait (min)</option>
+      <option value="p90">P90 Wait (min)</option>
+      <option value="max">Max Wait (min)</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="card-title">Activity × Plant Wait Matrix</div>
+    <div class="card-sub">Cell color = wait intensity · hover for exact value</div>
+    <div id="hm-legend" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:10px;color:var(--textm)">
+      <span>Low</span>
+      <div style="display:flex;gap:2px" id="hm-legend-cells"></div>
+      <span>High</span>
+    </div>
+    <div id="hm-grid"></div>
+  </div>
+  <div class="grid2" style="margin-top:0">
+    <div class="card"><div class="card-title">Slowest Transitions</div><div class="card-sub">Ranked by average wait time</div><div id="bn-list"></div></div>
+    <div class="card"><div class="card-title">Plant Efficiency Ranking</div><div class="card-sub">Average cycle time per plant</div><canvas id="c-plant" height="200"></canvas></div>
+  </div>
+</div>
+</div>
+
+<!-- BOTTLENECKS -->
+<div class="page" id="page-bottlenecks">
+<div class="page-content">
+  <div class="page-header"><h1>Bottleneck Analysis</h1><p>Stages ranked by average waiting time</p></div>
+  <div class="card"><div class="card-title">Top Delay Stages</div><div class="card-sub">Ranked by avg wait — time until next activity begins</div>
+    <div style="display:grid;grid-template-columns:20px 185px 1fr 90px 90px 90px;gap:12px;padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:4px"><span></span><span style="font-size:9px;color:var(--textd);text-transform:uppercase">Activity</span><span style="font-size:9px;color:var(--textd);text-transform:uppercase">Distribution</span><span style="font-size:9px;color:var(--textd);text-transform:uppercase;text-align:right;display:block">Avg</span><span style="font-size:9px;color:var(--textd);text-transform:uppercase;text-align:right;display:block">P90</span><span style="font-size:9px;color:var(--textd);text-transform:uppercase;text-align:right;display:block">Max</span></div>
+    <div id="bn-ranked"></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Avg Wait per Activity (min)</div><canvas id="c-act" height="200"></canvas></div>
+    <div class="card"><div class="card-title">Slowest Cases</div><table><thead><tr><th>Case ID</th><th>Duration</th><th>Plant</th><th>Rework</th><th style="width:80px">Bar</th></tr></thead><tbody id="slow-tbl"></tbody></table></div>
+  </div>
+</div>
+</div>
+
+<!-- REWORK -->
+<div class="page" id="page-rework">
+<div class="page-content">
+  <div class="page-header"><h1>Rework Analysis</h1><p>Retest loops · Test Completed → Retest Requested → Test Completed</p></div>
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+    <div class="kpi-card"><div class="kpi-top-label">Rework Cases</div><div class="kpi-big-val" id="rw-cases" style="color:var(--red)">253</div><div class="kpi-sub">of 1,000 total</div></div>
+    <div class="kpi-card"><div class="kpi-top-label">Rework Rate</div><div class="kpi-big-val" id="rw-rate" style="color:var(--red)">25.3%</div><div class="kpi-sub">threshold: 15%</div></div>
+    <div class="kpi-card"><div class="kpi-top-label">Multi-Retest</div><div class="kpi-big-val" id="rw-multi" style="color:var(--amber)">127</div><div class="kpi-sub">2+ retests</div></div>
+    <div class="kpi-card"><div class="kpi-top-label">Avg Delay</div><div class="kpi-big-val" id="rw-delay" style="color:var(--amber)">68m</div><div class="kpi-sub">per loop</div></div>
+    <div class="kpi-card"><div class="kpi-top-label">Clean Cases</div><div class="kpi-big-val" id="rw-clean" style="color:var(--green3)">747</div><div class="kpi-sub">no retest needed</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card"><div class="card-title">Rework Rate by Plant</div><div id="rw-bars"></div></div>
+    <div class="card"><div class="card-title">Retest Frequency</div><canvas id="c-ret" height="160"></canvas><div style="margin-top:12px;padding:12px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);font-size:12px;color:var(--text);font-family:'IBM Plex Mono',monospace" id="rw-impact">127 cases with 2+ retests · ~289h wasted</div></div>
+  </div>
+  <div class="card"><div class="card-title">Rework Loop Timeline</div>
+    <svg viewBox="0 0 560 130" style="width:100%;height:130px;font-family:'IBM Plex Mono',monospace">
+      <defs><marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 2L8 5L2 8" fill="none" stroke="#b8ccba" stroke-width="1.5" stroke-linecap="round"/></marker></defs>
+      <rect x="10" y="20" width="155" height="44" rx="4" fill="#f0f9f2" stroke="#5eac2c" stroke-width="1"/><text x="87" y="47" text-anchor="middle" fill="#1a2e1c" font-size="11">Test Completed</text>
+      <rect x="195" y="20" width="165" height="44" rx="4" fill="#fff5f5" stroke="#e8a89e" stroke-width="1"/><text x="277" y="47" text-anchor="middle" fill="#c0392b" font-size="11">Retest Requested</text>
+      <rect x="390" y="20" width="155" height="44" rx="4" fill="#f0f9f2" stroke="#5eac2c" stroke-width="1"/><text x="467" y="47" text-anchor="middle" fill="#1a2e1c" font-size="11">Test Completed</text>
+      <line x1="165" y1="42" x2="195" y2="42" stroke="#b8ccba" stroke-width="1" marker-end="url(#arw)"/>
+      <line x1="360" y1="42" x2="390" y2="42" stroke="#b8ccba" stroke-width="1" marker-end="url(#arw)"/>
+      <path d="M 295 64 C 295 100, 87 100, 87 64" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arw)"/>
+      <text x="191" y="115" text-anchor="middle" fill="#c0392b" font-size="10" id="rw-loop-label">avg 68 minutes per rework loop</text>
+      <text x="548" y="42" fill="#8aaa8e" font-size="11" dominant-baseline="middle">→ Approval...</text>
+    </svg>
+  </div>
+</div>
+</div>
+
+<!-- BUILDER -->
+<div class="page" id="page-builder">
+<div class="page-content">
+  <div class="page-header"><h1>Process Builder</h1><p>Drag-and-drop visual process modeler · define your ideal lab workflow</p></div>
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:16px">
+    <div>
+      <div class="builder-toolbar">
+        <button class="tb-btn primary" onclick="addBuilderNode()">+ Add Activity</button>
+        <button class="tb-btn" onclick="builderConnectMode()" id="connect-btn">⟶ Connect</button>
+        <button class="tb-btn" onclick="clearBuilder()">⊘ Clear All</button>
+        <button class="tb-btn" onclick="saveBuilderProcess()">↓ Save Process</button>
+        <button class="tb-btn" onclick="loadDefaultProcess()">⟳ Load Template</button>
+        <span style="margin-left:auto;font-size:10px;color:var(--textm);font-family:'IBM Plex Mono',monospace" id="builder-status">Click "Add Activity" to start</span>
+      </div>
+      <div style="margin-bottom:10px">
+        <span style="font-size:10px;color:var(--textd);text-transform:uppercase;letter-spacing:.08em;margin-right:8px">Quick Add:</span>
+        <span style="display:inline-flex;gap:6px;flex-wrap:wrap" id="palette"></span>
+      </div>
+      <div id="builder-canvas">
+        <svg id="builder-svg"></svg>
+        <div id="builder-nodes"></div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><div class="card-title">Selected Node</div><div class="card-sub">Click a node to edit its properties</div><div id="node-edit-content">
+        <div style="font-size:12px;color:var(--textm);padding:12px 0">No node selected</div>
+      </div></div>
+      <div class="card" style="margin-top:0"><div class="card-title">Saved Processes</div><div id="saved-processes" style="font-size:12px;color:var(--textm)">No saved processes yet</div></div>
+      <div class="card" style="margin-top:0">
+        <div class="card-title">Builder Stats</div>
+        <div style="font-size:12px;color:var(--textm);font-family:'IBM Plex Mono',monospace;line-height:2">
+          Nodes: <span id="stat-nodes" style="color:var(--text)">0</span><br>
+          Connections: <span id="stat-edges" style="color:var(--text)">0</span><br>
+          Est. Total Time: <span id="stat-time" style="color:var(--green)">0 min</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- COMPARISON -->
+<div class="page" id="page-compare">
+<div class="page-content">
+  <div class="page-header"><h1>Process Comparison</h1><p>Mined process vs designed process · detect deviations and timing differences</p></div>
+  <div class="compare-container">
+    <div class="compare-panel">
+      <div class="compare-title" style="color:var(--green)">◉ Mined Process (from data)</div>
+      <div class="compare-sub">Auto-discovered from 7,778 events · most frequent path</div>
+      <div id="compare-mined-flow" style="margin-bottom:12px"></div>
+      <div style="font-size:11px;color:var(--textm);font-family:'IBM Plex Mono',monospace">Avg duration: <span style="color:var(--text)">6.3h</span> · Rework: <span style="color:var(--red)">25.3%</span></div>
+    </div>
+    <div class="compare-panel">
+      <div class="compare-title" style="color:var(--amber)">◎ Designed Process (builder)</div>
+      <div class="compare-sub">User-defined ideal process from Process Builder</div>
+      <div id="compare-built-flow" style="margin-bottom:12px"></div>
+      <div style="font-size:11px;color:var(--textm);font-family:'IBM Plex Mono',monospace" id="compare-built-meta">Load a saved process from the Builder page</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <div class="card-title">Deviation Analysis</div>
+    <div class="card-sub">Differences between mined reality and designed ideal</div>
+    <div id="compare-deviations"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Timing Comparison</div>
+    <canvas id="c-compare" height="180"></canvas>
+  </div>
+</div>
+</div>
+
+<!-- RECOMMENDATIONS -->
+<div class="page" id="page-recommendations">
+<div class="page-content">
+  <div class="page-header"><h1>Recommendations</h1><p>Rule-based findings · sorted by severity</p></div>
+  <div style="display:flex;gap:12px;margin-bottom:20px">
+    <div style="padding:8px 16px;border-radius:4px;background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.2);display:flex;gap:8px;align-items:center"><span style="color:var(--red)">▲</span><span style="font-size:11px;color:var(--textm)">Critical:</span><span style="font-size:15px;font-weight:500" id="rec-crit-count">2</span></div>
+    <div style="padding:8px 16px;border-radius:4px;background:rgba(183,119,13,.08);border:1px solid rgba(183,119,13,.2);display:flex;gap:8px;align-items:center"><span style="color:var(--amber)">●</span><span style="font-size:11px;color:var(--textm)">Warning:</span><span style="font-size:15px;font-weight:500" id="rec-warn-count">2</span></div>
+    <div style="padding:8px 16px;border-radius:4px;background:rgba(0,78,43,.06);border:1px solid rgba(0,78,43,.15);display:flex;gap:8px;align-items:center;margin-left:auto"><span style="font-size:10px;color:var(--textm);font-family:'IBM Plex Mono',monospace">Estimated savings:</span><span style="font-size:14px;font-weight:500;color:var(--green)">~570h / period</span></div>
+  </div>
+  <div id="rec-list"></div>
+</div>
+</div>
+
+</div><!-- /main -->
+
+<!-- UPLOAD MODAL -->
+<div class="modal-ov" id="um">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <span style="font-size:14px;font-weight:500">Upload Event Log CSV</span>
+      <button onclick="document.getElementById('um').classList.remove('open')" style="background:none;border:none;color:var(--textm);cursor:pointer;font-size:20px">×</button>
+    </div>
+    <div style="margin-bottom:16px;font-size:12px;color:var(--textm);line-height:1.9">Required: <code style="color:var(--green);background:var(--bg3);padding:2px 6px;border-radius:3px;font-family:'IBM Plex Mono',monospace">case_id, activity, timestamp, resource, plant, status</code></div>
+    <label class="drop-z"><input type="file" accept=".csv" style="display:none" onchange="doUpload(this)"/><div style="font-size:30px;margin-bottom:8px">📂</div><div style="font-size:13px;color:var(--textm)">Click to select CSV</div><div style="font-size:10px;color:var(--green);margin-top:4px">✓ Runs entirely in browser</div></label>
+    <div id="up-msg" style="display:none;margin-top:12px;padding:8px 12px;border-radius:4px;font-size:12px"></div>
+    <div style="margin-top:16px;padding:12px;background:var(--bg3);border-radius:4px;border:1px solid var(--border);font-size:11px;color:var(--textm);line-height:1.7;font-family:'IBM Plex Mono',monospace">Demo: embedded 1,000-case sample data active · upload to analyze your own CSV</div>
+  </div>
+</div>
+
+<script>
+var D={
+  acts:[
+    {a:"Sample Created",   cnt:1000,avg:14.3, p90:22.3, max:29.9,   col:"#22883f"},
+    {a:"Sample Received",  cnt:1000,avg:30.5, p90:47.0, max:126.0,  col:"#22883f"},
+    {a:"Test Started",     cnt:958, avg:67.3, p90:99.6, max:134.6,  col:"#b7770d"},
+    {a:"Test Completed",   cnt:1415,avg:12.4, p90:20.9, max:29.2,   col:"#22883f"},
+    {a:"Retest Requested", cnt:415, avg:67.9, p90:100.8,max:133.4,  col:"#c0392b"},
+    {a:"Approval Pending", cnt:1000,avg:198.2,p90:423.3,max:2048.2, col:"#c0392b"},
+    {a:"Approved",         cnt:1000,avg:23.0, p90:37.2, max:44.6,   col:"#22883f"},
+    {a:"Report Generated", cnt:990, avg:0,    p90:0,    max:0,      col:"#6b7280"},
+  ],
+  bns:[
+    {a:"Approval Pending", cnt:1000,avg:198.2,p90:423.3,max:2048.2},
+    {a:"Retest Requested", cnt:415, avg:67.9, p90:100.8,max:133.4},
+    {a:"Test Started",     cnt:958, avg:67.3, p90:99.6, max:134.6},
+    {a:"Sample Received",  cnt:1000,avg:30.5, p90:47.0, max:126.0},
+    {a:"Approved",         cnt:1000,avg:23.0, p90:37.2, max:44.6},
+  ],
+  plants:[
+    {p:"Casablanca",cnt:146,hrs:4.74,rw:23.3},
+    {p:"Safi",      cnt:353,hrs:5.37,rw:25.2},
+    {p:"Agadir",    cnt:299,hrs:6.58,rw:28.1},
+    {p:"Marrakech", cnt:202,hrs:8.59,rw:22.8},
+  ],
+  dur:{l:["<2h","2-4h","4-6h","6-8h","8-12h","12-24h",">24h"],v:[3,271,377,180,92,65,12]},
+  slow:[
+    {id:"S0103",h:38.3,p:"Marrakech",e:7,r:false},{id:"S0060",h:33.0,p:"Marrakech",e:7,r:false},
+    {id:"S0400",h:32.5,p:"Marrakech",e:7,r:false},{id:"S0398",h:32.5,p:"Marrakech",e:7,r:false},
+    {id:"S0623",h:27.7,p:"Marrakech",e:7,r:false},{id:"S0114",h:27.7,p:"Agadir",   e:7,r:false},
+    {id:"S0244",h:27.5,p:"Agadir",   e:7,r:false},{id:"S0619",h:26.1,p:"Marrakech",e:7,r:false},
+  ],
+  rw_plants:[
+    {p:"Agadir",rw:84,tot:299,pct:28.1},{p:"Safi",rw:89,tot:353,pct:25.2},
+    {p:"Casablanca",rw:34,tot:146,pct:23.3},{p:"Marrakech",rw:46,tot:202,pct:22.8},
+  ],
+  variants:[
+    {v:["Sample Created","Sample Received","Test Started","Test Completed","Approval Pending","Approved","Report Generated"],c:705,p:70.5,s:7,r:false,avgH:4.8},
+    {v:["Sample Created","Sample Received","Test Started","Test Completed","Retest Requested","Test Completed","Approval Pending","Approved","Report Generated"],c:126,p:12.6,s:9,r:true,avgH:7.2},
+    {v:["...","2x Retest","...","Approval Pending","Approved","Report Generated"],c:92,p:9.2,s:11,r:true,avgH:9.4},
+    {v:["...","3x Retest","...","Approval Pending","Approved","Report Generated"],c:35,p:3.5,s:13,r:true,avgH:11.8},
+    {v:["Sample Created","Sample Received","Test Completed","Approval Pending","Approved","Report Generated"],c:32,p:3.2,s:6,r:false,avgH:5.1},
+    {v:["Sample Created","Sample Received","Test Completed","Approval Pending","Approved"],c:10,p:1.0,s:5,r:false,avgH:4.2},
+  ],
+  edges:[
+    {f:"Sample Created",   t:"Sample Received",  c:1000,avg:14.3},
+    {f:"Sample Received",  t:"Test Started",     c:958, avg:28.6},
+    {f:"Sample Received",  t:"Test Completed",   c:42,  avg:74.4},
+    {f:"Test Started",     t:"Test Completed",   c:958, avg:67.3},
+    {f:"Test Completed",   t:"Retest Requested", c:415, avg:11.6},
+    {f:"Test Completed",   t:"Approval Pending", c:1000,avg:14.3},
+    {f:"Retest Requested", t:"Test Completed",   c:415, avg:67.9},
+    {f:"Approval Pending", t:"Approved",         c:1000,avg:198.2},
+    {f:"Approved",         t:"Report Generated", c:990, avg:23.0},
+  ],
+  recs:[
+    {id:"REC-001",s:"critical",cat:"Bottleneck",title:"Approval Stage Delay Detected",
+     issue:"Approval Pending averages 3.3h wait (threshold: 2.0h). P90 is 7.1h.",
+     cause:"QA manager workload imbalance or lack of escalation procedures.",
+     action:"1. Assign backup approver during peak hours.\n2. Implement automated queue with SLA alerts.\n3. Set 2-hour escalation trigger.",
+     impact:"Reducing approval wait by 50% saves ~1.7h per sample."},
+    {id:"REC-002",s:"critical",cat:"Quality",title:"High Retest Rate Identified",
+     issue:"25.3% of samples require retesting (threshold: 15%). Avg delay: 68 minutes.",
+     cause:"Inconsistent testing procedures or equipment calibration issues.",
+     action:"1. Audit procedures for non-conformance.\n2. Schedule preventive calibration checks.\n3. Pre-test checklist.",
+     impact:"Eliminating rework for 253 cases saves ~285h."},
+    {id:"REC-003",s:"warning",cat:"Quality",title:"Multiple Retests on Same Sample",
+     issue:"12.7% of cases required 2+ retests — systematic testing issues.",
+     cause:"Specific test types unreliable or technicians need training.",
+     action:"1. Identify multi-retest test types.\n2. Peer review after 2nd failure.\n3. Targeted training.",
+     impact:"Resolving multi-retests reduces avg cycle time 15-20%."},
+    {id:"REC-004",s:"warning",cat:"Plant Performance",title:"Plant Inefficiency: Marrakech",
+     issue:"Marrakech averages 8.6h — 1.6× network average of 5.5h.",
+     cause:"Local staffing shortages or equipment issues.",
+     action:"1. Targeted audit of Marrakech.\n2. Compare with Casablanca (4.7h avg).\n3. Resource reallocation.",
+     impact:"Improving Marrakech to avg saves ~3.1h/sample."},
+  ],
+  heatmapData:{
+    activities:["Sample Created","Sample Received","Test Started","Test Completed","Retest Requested","Approval Pending","Approved"],
+    plants:["Safi","Agadir","Marrakech","Casablanca"],
+    avg:[[13,16,19,11],[28,36,54,22],[60,78,108,48],[11,14,16,9],[61,82,115,52],[165,215,298,135],[21,26,31,18]],
+    p90:[[21,25,30,18],[42,55,80,35],[95,115,158,72],[19,24,28,15],[95,118,162,78],[350,460,680,280],[35,42,48,28]],
+  }
+};
+
+// ── NAVIGATION ──────────────────────────────────────────────────────────────
+document.querySelectorAll('.nav-item').forEach(function(el){
+  el.addEventListener('click',function(){
+    document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+    document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+    el.classList.add('active');
+    var pageId='page-'+el.dataset.page;
+    document.getElementById(pageId).classList.add('active');
+    if(el.dataset.page==='dashboard')   {drawChart('c-dur',D.dur.l,D.dur.v,durColors(),190);}
+    if(el.dataset.page==='processmap')  {renderDFG();}
+    if(el.dataset.page==='variants')    {renderVariants();drawVariantDurChart();}
+    if(el.dataset.page==='heatmap')     {renderHeatmap();drawChart('c-plant',D.plants.map(function(p){return p.p;}),D.plants.map(function(p){return p.hrs;}),D.plants.map(function(p){return p.hrs>7?'#c0392b':p.hrs>6?'#b7770d':'#22883f';}),200);}
+    if(el.dataset.page==='bottlenecks') {drawChart('c-act',D.acts.filter(function(a){return a.avg>0;}).map(function(a){return a.a.split(' ')[0];}),D.acts.filter(function(a){return a.avg>0;}).map(function(a){return a.avg;}),D.acts.filter(function(a){return a.avg>0;}).map(function(a){return a.avg>90?'#c0392b':a.avg>30?'#b7770d':'#22883f';}),200);}
+    if(el.dataset.page==='rework')      {drawChart('c-ret',['1 retest','2 retests','3 retests'],[126,92,35],['#c0392b','#b7770d','#c0392b'],160);}
+    if(el.dataset.page==='builder')     {updateBuilderStats();}
+    if(el.dataset.page==='compare')     {renderComparison();}
+    if(el.dataset.page==='recommendations'){renderRecs();}
+  });
+});
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function mb(val,max,col,h){h=h||8;return '<div class="mbar-wrap" style="height:'+h+'px"><div class="mbar-fill" style="width:'+Math.min(100,val/max*100)+'%;background:'+col+';height:100%"></div></div>';}
+function durColors(){return D.dur.v.map(function(v,i){var c=['#22883f','#22883f','#22883f','#b7770d','#b7770d','#c0392b','#c0392b'];return c[i];});}
+function nodeColor(avgMin){return avgMin>90?'#c0392b':avgMin>30?'#b7770d':'#22883f';}
+
+function drawChart(id,labels,values,colors,height){
+  var cv=document.getElementById(id);if(!cv)return;
+  var dpr=window.devicePixelRatio||1;
+  var w=cv.offsetWidth||400;
+  cv.width=w*dpr;cv.height=height*dpr;cv.style.height=height+'px';
+  var ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,w,height);
+  var pad={t:10,r:10,b:38,l:52};
+  var cw=w-pad.l-pad.r,ch=height-pad.t-pad.b;
+  var mx=Math.max.apply(null,values)*1.12;
+  var bw=(cw/values.length)*0.58,bg=(cw/values.length)*0.42;
+  [0.25,0.5,0.75,1].forEach(function(f){
+    var y=pad.t+ch-ch*f;
+    ctx.strokeStyle='#e0e8e2';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();
+    ctx.fillStyle='#8aaa8e';ctx.font='10px monospace';ctx.textAlign='right';
+    var v=mx*f;ctx.fillText(v>=100?Math.round(v):v.toFixed(1),pad.l-4,y+4);
+  });
+  values.forEach(function(v,i){
+    var x=pad.l+i*(bw+bg)+bg/2,bh=(v/mx)*ch,y=pad.t+ch-bh;
+    ctx.fillStyle=Array.isArray(colors)?colors[i]:colors;
+    ctx.beginPath();if(ctx.roundRect){ctx.roundRect(x,y,bw,bh,3);}else{ctx.rect(x,y,bw,bh);}ctx.fill();
+    ctx.fillStyle='#8aaa8e';ctx.font='10px monospace';ctx.textAlign='center';
+    var lbl=labels[i],ml=Math.max(4,Math.floor(bw/6));
+    ctx.fillText(lbl.length>ml?lbl.slice(0,ml-1)+'…':lbl,x+bw/2,pad.t+ch+16);
+  });
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────────────────
+(function renderDashboard(){
+  var mx=Math.max.apply(null,D.acts.map(function(a){return a.avg;}));
+  var h='';
+  D.acts.forEach(function(a){
+    if(!a.avg)return;
+    var isB=a.a==='Approval Pending',isR=a.a==='Retest Requested';
+    var c=isB||isR?'#c0392b':a.avg>60?'#b7770d':'#22883f';
+    var tc=isB||isR?'#c0392b':a.avg>60?'#b7770d':'#4a6b4e';
+    h+='<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;margin-bottom:4px">';
+    h+='<span style="font-size:11px;color:'+(isB||isR?'#c0392b':'var(--textm)')+'">'+ a.a+'</span>';
+    h+='<span style="font-size:11px;color:'+tc+';font-family:IBM Plex Mono,monospace">'+a.avg.toFixed(0)+'m · p90 '+a.p90.toFixed(0)+'m</span></div>';
+    h+=mb(a.avg,mx,c)+'</div>';
+  });
+  document.getElementById('wait-bars').innerHTML=h;
+
+  var netAvg=6.3,mx2=1/Math.min.apply(null,D.plants.map(function(p){return p.hrs;}));
+  var pt='';
+  D.plants.forEach(function(p){
+    var vs=(p.hrs-netAvg)/netAvg*100;
+    var dc=p.hrs>7?'#c0392b':p.hrs>netAvg?'#b7770d':'#22883f';
+    pt+='<tr><td>'+p.p+'</td><td style="color:var(--textm);font-family:IBM Plex Mono,monospace">'+p.cnt+'</td>';
+    pt+='<td style="color:'+dc+';font-weight:500;font-family:IBM Plex Mono,monospace">'+p.hrs.toFixed(1)+'h</td>';
+    pt+='<td style="color:'+(p.rw>26?'#b7770d':'var(--text)')+';font-family:IBM Plex Mono,monospace">'+p.rw.toFixed(1)+'%</td>';
+    pt+='<td style="color:'+(vs>0?'#c0392b':'#22883f')+';font-family:IBM Plex Mono,monospace;font-size:11px">'+(vs>0?'+':'')+vs.toFixed(1)+'%</td>';
+    pt+='<td>'+mb(1/p.hrs,mx2,dc,6)+'</td></tr>';
+  });
+  document.getElementById('plant-tbl').innerHTML=pt;
+})();
+
+// ── D3 INTERACTIVE PROCESS MAP ────────────────────────────────────────────────
+var dfgSvg,dfgZoom,dfgG;
+var dfgLayout='hierarchical';
+
+function renderDFG(){
+  var container=document.getElementById('dfg-container');
+  d3.select('#dfg-container svg').remove();
+  var W=container.offsetWidth,H=container.offsetHeight||580;
+  var svg=d3.select('#dfg-container').insert('svg',':first-child').attr('width',W).attr('height',H);
+  dfgSvg=svg;
+  var defs=svg.append('defs');
+  defs.append('marker').attr('id','dfg-arrow').attr('viewBox','0 0 10 10').attr('refX',8).attr('refY',5).attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto-start-reverse').append('path').attr('d','M2 2L8 5L2 8').attr('fill','none').attr('stroke','#b8ccba').attr('stroke-width',1.5);
+
+  var zoom=d3.zoom().scaleExtent([0.3,3]).on('zoom',function(event){g.attr('transform',event.transform);});
+  dfgZoom=zoom;
+  svg.call(zoom);
+  var g=svg.append('g');
+  dfgG=g;
+
+  // Node positions - hierarchical left to right
+  var nodes=[
+    {id:"Sample Created",   x:80,  y:H/2-200,avg:14.3, cnt:1000},
+    {id:"Sample Received",  x:80,  y:H/2-110,avg:30.5, cnt:1000},
+    {id:"Test Started",     x:80,  y:H/2-20, avg:67.3, cnt:958},
+    {id:"Test Completed",   x:80,  y:H/2+70, avg:12.4, cnt:1415},
+    {id:"Retest Requested", x:280, y:H/2+20, avg:67.9, cnt:415},
+    {id:"Approval Pending", x:80,  y:H/2+160,avg:198.2,cnt:1000},
+    {id:"Approved",         x:80,  y:H/2+250,avg:23.0, cnt:1000},
+    {id:"Report Generated", x:80,  y:H/2+340,avg:0,    cnt:990},
+  ];
+  var NW=170,NH=48;
+  var maxCnt=Math.max.apply(null,nodes.map(function(n){return n.cnt;}));
+  var maxEdge=Math.max.apply(null,D.edges.map(function(e){return e.c;}));
+
+  // Draw edges first
+  D.edges.forEach(function(e){
+    var s=nodes.find(function(n){return n.id===e.f;}),t=nodes.find(function(n){return n.id===e.t;});
+    if(!s||!t)return;
+    var sw=Math.max(1.5,(e.c/maxEdge)*8);
+    var col=e.avg>90?'#e8a89e':e.avg>30?'#f5dba0':'#a8d5b5';
+    var x1=s.x+NW/2,y1=s.y+NH,x2=t.x+NW/2,y2=t.y;
+    var isLoop=e.t==='Retest Requested'||e.f==='Retest Requested';
+    if(isLoop){
+      var lc=e.f==='Retest Requested'?'right':'right';
+      var path;
+      if(e.t==='Retest Requested'){
+        path='M '+(x1+20)+' '+(s.y+NH/2)+' C '+(x1+120)+' '+(s.y+NH)+', '+(t.x+NW)+' '+(t.y)+', '+(t.x+NW)+' '+(t.y+NH/2);
+      } else {
+        path='M '+(s.x+NW)+' '+(s.y+NH/2)+' C '+(s.x+NW+100)+' '+(s.y)+', '+(x2+80)+' '+(y2+NH)+', '+(x2+20)+' '+(y2+NH/2);
+      }
+      g.append('path').attr('d',path).attr('fill','none').attr('stroke','#e8a89e').attr('stroke-width',sw).attr('stroke-dasharray','6,3').attr('marker-end','url(#dfg-arrow)').attr('opacity',0.8);
+    } else {
+      g.append('line').attr('x1',x1).attr('y1',y1).attr('x2',x2).attr('y2',y2).attr('stroke',col).attr('stroke-width',sw).attr('marker-end','url(#dfg-arrow)').attr('opacity',0.85);
+    }
+    // Time label on edge
+    if(!isLoop){
+      g.append('text').attr('x',(x1+x2)/2+14).attr('y',(y1+y2)/2).attr('fill',e.avg>90?'#b7770d':'#8aaa8e').attr('font-size',9).attr('font-family','IBM Plex Mono,monospace').text(Math.round(e.avg)+'m');
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach(function(n){
+    var isBottle=n.id==='Approval Pending';
+    var isRework=n.id==='Retest Requested';
+    var op=0.35+(n.cnt/maxCnt)*0.65;
+    var bg=isBottle?'#fff5f0':isRework?'#fff5f5':'#f0f9f4';
+    var stroke=isBottle?'#c0392b':isRework?'#e8a89e':'#5eac2c';
+    var sw=isBottle||isRework?2:1;
+    var nodeG=g.append('g').attr('class','dfg-node').attr('cursor','pointer');
+    nodeG.append('rect').attr('x',n.x).attr('y',n.y).attr('width',NW).attr('height',NH).attr('rx',6).attr('fill',bg).attr('stroke',stroke).attr('stroke-width',sw).attr('opacity',op+0.3);
+    nodeG.append('text').attr('x',n.x+NW/2).attr('y',n.y+17).attr('text-anchor','middle').attr('fill','#1a2e1c').attr('font-size',11).attr('font-weight',500).attr('font-family','Inter,sans-serif').text(n.id);
+    nodeG.append('text').attr('x',n.x+NW/2).attr('y',n.y+33).attr('text-anchor','middle').attr('fill','#4a6b4e').attr('font-size',9).attr('font-family','IBM Plex Mono,monospace').text(n.cnt.toLocaleString()+' events · '+(n.avg>0?n.avg.toFixed(0)+'m avg':''));
+    if(isBottle){nodeG.append('rect').attr('x',n.x).attr('y',n.y).attr('width',NW).attr('height',NH).attr('rx',6).attr('fill','none').attr('stroke','#c0392b').attr('stroke-width',0.5).attr('stroke-dasharray','4,3').attr('opacity',0.4);}
+    nodeG.on('click',function(){showNodeDetail(n);}).on('mouseover',function(event){showTooltip(event,n);}).on('mouseout',function(){hideTooltip();});
+  });
+
+  // Center the view
+  svg.call(zoom.transform,d3.zoomIdentity.translate(W/2-80,H/2-120).scale(0.85));
+
+  // Edge table
+  var et='';
+  D.edges.slice().sort(function(a,b){return b.avg-a.avg;}).forEach(function(e){
+    var slow=e.avg>90;
+    et+='<tr><td style="font-size:11px;color:'+(slow?'#b7770d':'var(--text)')+'">'+e.f.split(' ')[0]+'</td><td style="font-size:11px;color:'+(slow?'#b7770d':'var(--text)')+'">'+e.t.split(' ')[0]+'</td><td style="text-align:right;color:var(--textm);font-family:IBM Plex Mono,monospace">'+e.c+'</td><td style="text-align:right;color:'+(slow?'#b7770d':'var(--text)')+';font-family:IBM Plex Mono,monospace">'+e.avg.toFixed(0)+'m</td></tr>';
+  });
+  document.getElementById('edge-tbl').innerHTML=et;
+}
+
+function showNodeDetail(n){
+  var el=document.getElementById('node-detail');
+  el.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'
+    +'<div style="background:var(--bg3);padding:10px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:9px;color:var(--textd);text-transform:uppercase;margin-bottom:4px">Activity</div><div style="font-size:13px;font-weight:500;color:var(--green)">'+n.id+'</div></div>'
+    +'<div style="background:var(--bg3);padding:10px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:9px;color:var(--textd);text-transform:uppercase;margin-bottom:4px">Frequency</div><div style="font-size:13px;font-weight:500">'+n.cnt.toLocaleString()+'</div></div>'
+    +'<div style="background:var(--bg3);padding:10px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:9px;color:var(--textd);text-transform:uppercase;margin-bottom:4px">Avg Wait</div><div style="font-size:13px;font-weight:500;color:'+(n.avg>90?'#c0392b':n.avg>30?'#b7770d':'#22883f')+'">'+(n.avg>0?n.avg.toFixed(0)+'m':'—')+'</div></div>'
+    +'<div style="background:var(--bg3);padding:10px;border-radius:4px;border:1px solid var(--border)"><div style="font-size:9px;color:var(--textd);text-transform:uppercase;margin-bottom:4px">P90 Wait</div><div style="font-size:13px;font-weight:500">'+(D.acts.find(function(a){return a.a===n.id;})||{p90:0}).p90.toFixed(0)+'m</div></div>'
+    +'</div>';
+}
+
+function showTooltip(event,n){
+  var t=document.getElementById('dfg-tooltip');
+  var container=document.getElementById('dfg-container');
+  var rect=container.getBoundingClientRect();
+  t.style.left=(event.clientX-rect.left+12)+'px';
+  t.style.top=(event.clientY-rect.top-10)+'px';
+  t.innerHTML='<div style="font-weight:500;color:var(--green);margin-bottom:6px">'+ n.id+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:3px;font-family:IBM Plex Mono,monospace;font-size:10px;color:var(--textm)">'
+    +'<span>Frequency: <b style="color:var(--text)">'+n.cnt.toLocaleString()+'</b></span>'
+    +'<span>Avg wait: <b style="color:'+(n.avg>90?'#c0392b':'var(--text)')+'">'+(n.avg||0).toFixed(0)+'m</b></span></div>';
+  t.classList.add('show');
+}
+function hideTooltip(){document.getElementById('dfg-tooltip').classList.remove('show');}
+function dfgZoomIn(){if(dfgSvg&&dfgZoom)dfgSvg.transition().duration(300).call(dfgZoom.scaleBy,1.3);}
+function dfgZoomOut(){if(dfgSvg&&dfgZoom)dfgSvg.transition().duration(300).call(dfgZoom.scaleBy,0.77);}
+function resetDFGZoom(){if(dfgSvg&&dfgZoom){var container=document.getElementById('dfg-container');dfgSvg.transition().duration(400).call(dfgZoom.transform,d3.zoomIdentity.translate(container.offsetWidth/2-80,container.offsetHeight/2-120).scale(0.85));}}
+function toggleDFGLayout(){renderDFG();}
+
+// ── HEATMAP ───────────────────────────────────────────────────────────────────
+function renderHeatmap(){
+  var metric=document.getElementById('hm-metric').value||'avg';
+  var data=D.heatmapData;
+  var acts=data.activities,plants=data.plants;
+  var vals=metric==='avg'?data.avg:metric==='p90'?data.p90:data.avg.map(function(row){return row.map(function(v){return v*2.5;});});
+  
+  // Find max for color scale
+  var allVals=[];
+  vals.forEach(function(row){row.forEach(function(v){allVals.push(v);});});
+  var vmax=Math.max.apply(null,allVals);
+  
+  function heatColor(v){
+    var t=v/vmax;
+    if(t<0.3)return '#d4edda';
+    if(t<0.5)return '#a8d5b5';
+    if(t<0.65)return '#f5dba0';
+    if(t<0.8)return '#f0a070';
+    return '#e07060';
+  }
+  
+  // Legend
+  var legCells='';
+  [0,0.2,0.4,0.6,0.8,1].forEach(function(t){
+    legCells+='<div style="width:28px;height:16px;border-radius:2px;background:'+heatColor(t*vmax)+'"></div>';
+  });
+  document.getElementById('hm-legend-cells').innerHTML=legCells;
+  
+  // Grid: rows = activities, cols = plants
+  var gridH='';
+  // Header row
+  gridH+='<div style="display:grid;grid-template-columns:160px repeat('+plants.length+',1fr);gap:2px;margin-bottom:2px">';
+  gridH+='<div></div>';
+  plants.forEach(function(p){gridH+='<div class="hm-label" style="text-align:center;font-weight:500;color:var(--text)">'+p+'</div>';});
+  gridH+='</div>';
+  
+  acts.forEach(function(act,i){
+    gridH+='<div style="display:grid;grid-template-columns:160px repeat('+plants.length+',1fr);gap:2px;margin-bottom:2px">';
+    gridH+='<div class="hm-label" style="text-align:right;padding-right:10px">'+act+'</div>';
+    plants.forEach(function(p,j){
+      var v=vals[i][j];
+      var bg=heatColor(v);
+      var textcol=v/vmax>0.5?'#fff':'#1a2e1c';
+      gridH+='<div class="hm-cell" style="background:'+bg+';color:'+textcol+';height:32px;font-size:9px" title="'+act+' · '+p+' · '+v.toFixed(0)+'m">'+(v>5?v.toFixed(0)+'m':'')+'</div>';
+    });
+    gridH+='</div>';
+  });
+  document.getElementById('hm-grid').innerHTML=gridH;
+  
+  // Bottleneck list
+  var bnData=D.bns.slice(0,5);var bnMax=bnData[0].avg;var bnh='';
+  bnData.forEach(function(a,i){
+    var c=i===0?'#c0392b':i<=2?'#b7770d':'#22883f';
+    bnh+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">';
+    bnh+='<span style="font-size:10px;color:var(--textd);font-family:IBM Plex Mono,monospace;width:18px">#'+(i+1)+'</span>';
+    bnh+='<span style="font-size:12px;color:'+(i===0?'#c0392b':'var(--text)')+';width:145px;font-size:11px">'+ a.a+'</span>';
+    bnh+='<div style="flex:1">'+mb(a.avg,bnMax,c)+'</div>';
+    bnh+='<span style="font-size:11px;font-family:IBM Plex Mono,monospace;color:'+(i===0?'#c0392b':'var(--text)')+';min-width:50px;text-align:right">'+ a.avg.toFixed(0)+'m</span>';
+    bnh+='</div>';
+  });
+  document.getElementById('bn-list').innerHTML=bnh;
+}
+
+// ── BOTTLENECKS ───────────────────────────────────────────────────────────────
+(function renderBottlenecks(){
+  var mx=D.bns[0].avg,h='';
+  D.bns.forEach(function(a,i){
+    var c=i===0?'#c0392b':i===1?'#e8a89e':'#22883f';
+    h+='<div style="display:grid;grid-template-columns:20px 185px 1fr 90px 90px 90px;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)">';
+    h+='<span style="font-size:11px;color:var(--textd);font-family:IBM Plex Mono,monospace">#'+(i+1)+'</span>';
+    h+='<span style="font-size:12px;color:'+(i===0?'#c0392b':'var(--text)')+'">'+ a.a+'</span>';
+    h+=mb(a.avg,mx,c);
+    h+='<span style="display:block;text-align:right;font-size:12px;color:'+(i===0?'#c0392b':i===1?'#b7770d':'var(--text)')+';font-family:IBM Plex Mono,monospace">'+ a.avg.toFixed(0)+'m</span>';
+    h+='<span style="display:block;text-align:right;font-size:11px;color:var(--textm);font-family:IBM Plex Mono,monospace">'+a.p90.toFixed(0)+'m</span>';
+    h+='<span style="display:block;text-align:right;font-size:11px;color:var(--textm);font-family:IBM Plex Mono,monospace">'+(a.max/60).toFixed(1)+'h</span></div>';
+  });
+  document.getElementById('bn-ranked').innerHTML=h;
+  var mh=D.slow[0].h,st='';
+  D.slow.forEach(function(c){
+    st+='<tr><td style="color:var(--green);font-family:IBM Plex Mono,monospace;font-size:11px">'+c.id+'</td>';
+    st+='<td style="color:'+(c.h>30?'#c0392b':'#b7770d')+';font-weight:500;font-family:IBM Plex Mono,monospace">'+ c.h.toFixed(1)+'h</td>';
+    st+='<td>'+c.p+'</td><td>'+(c.r?'<span class="badge bw">Yes</span>':'<span style="color:var(--textd)">—</span>')+'</td>';
+    st+='<td>'+mb(c.h,mh,'#c0392b',6)+'</td></tr>';
+  });
+  document.getElementById('slow-tbl').innerHTML=st;
+})();
+
+// ── REWORK ────────────────────────────────────────────────────────────────────
+(function renderRework(){
+  var mx=Math.max.apply(null,D.rw_plants.map(function(p){return p.pct;}));
+  var h='';
+  D.rw_plants.forEach(function(p){
+    var c=p.pct>26?'#b7770d':'#c0392b';
+    h+='<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;margin-bottom:4px">';
+    h+='<span style="font-size:12px">'+p.p+'</span><span style="font-size:11px;color:'+(p.pct>26?'#b7770d':'var(--text)')+';font-family:IBM Plex Mono,monospace">'+ p.rw+'/'+p.tot+' · '+p.pct.toFixed(1)+'%</span></div>';
+    h+=mb(p.pct,mx*1.1,c,8)+'</div>';
+  });
+  document.getElementById('rw-bars').innerHTML=h;
+})();
+
+// ── VARIANTS ──────────────────────────────────────────────────────────────────
+var selectedVariant=0;
+function renderVariants(){
+  var h='';
+  D.variants.forEach(function(v,i){
+    var isSelected=i===selectedVariant;
+    h+='<div class="variant-card'+(isSelected?' selected':'')+'" onclick="selectVariant('+ i+')">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+    h+='<span style="font-size:11px;color:var(--textm);font-family:IBM Plex Mono,monospace">Variant '+(i+1)+' · '+v.s+' steps</span>';
+    h+='<div style="display:flex;gap:6px;align-items:center">'+(v.r?'<span class="badge bw">rework</span>':'')+' <span style="font-size:13px;color:var(--green);font-weight:500;font-family:IBM Plex Mono,monospace">'+ v.p.toFixed(1)+'%</span><span style="font-size:10px;color:var(--textm);font-family:IBM Plex Mono,monospace">('+v.c+' cases)</span></div></div>';
+    h+='<div class="variant-flow">';
+    v.v.forEach(function(step,si){
+      var col=step.includes('Retest')||step.includes('3x')||step.includes('2x')?'#fff5f5':step.includes('Approval')?'#fff8f0':'#f0f9f4';
+      var border=step.includes('Retest')||step.includes('...')  ?'#e8a89e':step.includes('Approval')?'#f5c87e':'#a8d5b5';
+      var tc=step.includes('Retest')?'#c0392b':step.includes('Approval')?'#b7770d':'#004e2b';
+      h+='<span class="vf-node" style="background:'+col+';border:1px solid '+border+';color:'+tc+'">'+ step+'</span>';
+      if(si<v.v.length-1)h+='<span class="vf-arrow">→</span>';
+    });
+    h+='</div>';
+    h+='<div style="margin-top:8px">'+ mb(v.c,D.variants[0].c,v.r?'#b7770d':'#22883f',4)+'</div></div>';
+  });
+  document.getElementById('variant-list').innerHTML=h;
+  showVariantDFG(selectedVariant);
+}
+
+function selectVariant(i){selectedVariant=i;renderVariants();}
+
+function showVariantDFG(i){
+  var v=D.variants[i];
+  var container=document.getElementById('variant-dfg');
+  if(!v||!v.v)return;
+  var h='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:10px">';
+  v.v.forEach(function(step,si){
+    var col=step.includes('Retest')||step.includes('x')?'#fff5f5':step.includes('Approval')?'#fff8f0':'#f0f9f4';
+    var border=step.includes('Retest')  ?'#e8a89e':step.includes('Approval')?'#f5c87e':'#a8d5b5';
+    var tc=step.includes('Retest')?'#c0392b':step.includes('Approval')?'#b7770d':'#004e2b';
+    h+='<div style="padding:8px 12px;background:'+col+';border:1.5px solid '+border+';border-radius:6px;font-size:11px;font-weight:500;color:'+tc+';text-align:center">'+ step+'</div>';
+    if(si<v.v.length-1)h+='<div style="color:var(--textd);font-size:14px">→</div>';
+  });
+  h+='</div>';
+  h+='<div style="padding:6px 10px;font-size:10px;color:var(--textm);font-family:IBM Plex Mono,monospace;display:flex;gap:16px">';
+  h+='<span>Cases: <b style="color:var(--green)">'+v.c+'</b></span>';
+  h+='<span>Avg duration: <b style="color:var(--text)">'+v.avgH+'h</b></span>';
+  h+='<span>Steps: <b style="color:var(--text)">'+v.s+'</b></span></div>';
+  container.innerHTML=h;
+}
+
+function drawVariantDurChart(){
+  drawChart('c-variant-dur',D.variants.map(function(v,i){return 'V'+(i+1);}),D.variants.map(function(v){return v.avgH;}),D.variants.map(function(v){return v.r?'#b7770d':'#22883f';}),120);
+}
+
+// ── DRAG-AND-DROP BUILDER ─────────────────────────────────────────────────────
+var builderNodes=[],builderEdges=[],selectedNode=null,connectMode=false,connectFrom=null,nodeCounter=0;
+var savedProcesses=[];
+var ACTIVITY_TYPES=[
+  {name:'Sample Created',  role:'Operator',   dur:10, col:'#e8f5ec'},
+  {name:'Sample Received', role:'Lab Tech',    dur:20, col:'#e8f5ec'},
+  {name:'Test Started',    role:'Lab Tech',    dur:15, col:'#fff8e8'},
+  {name:'Test Completed',  role:'Lab Tech',    dur:60, col:'#e8f5ec'},
+  {name:'Retest Requested',role:'QA Manager',  dur:10, col:'#fdf0f0'},
+  {name:'Approval Pending',role:'QA Manager',  dur:120,col:'#fff5e8'},
+  {name:'Approved',        role:'QA Manager',  dur:5,  col:'#e8f5ec'},
+  {name:'Report Generated',role:'Lab Tech',    dur:15, col:'#f0f0f0'},
+];
+
+(function initPalette(){
+  var h='';
+  ACTIVITY_TYPES.forEach(function(t){
+    h+='<span class="palette-item" data-atype="'+t.name+'" onclick="addBuilderNodeType(this.dataset.atype)">'+t.name+'</span>';
+  });
+  document.getElementById('palette').innerHTML=h;
+})();
+
+function getNodeById(id){return builderNodes.find(function(n){return n.id===id;});}
+
+function addBuilderNode(name,x,y){
+  var t=ACTIVITY_TYPES[Math.floor(Math.random()*ACTIVITY_TYPES.length)];
+  var node={id:'n'+(++nodeCounter),name:name||'New Activity',role:t.role,dur:t.dur,x:x||100+Math.random()*400,y:y||80+Math.random()*300,col:t.col};
+  builderNodes.push(node);renderBuilder();selectBuilderNode(node.id);
+}
+function addBuilderNodeType(typeName){
+  var t=ACTIVITY_TYPES.find(function(a){return a.name===typeName;})||ACTIVITY_TYPES[0];
+  var node={id:'n'+(++nodeCounter),name:t.name,role:t.role,dur:t.dur,x:100+Math.random()*360,y:80+Math.random()*300,col:t.col};
+  builderNodes.push(node);renderBuilder();selectBuilderNode(node.id);
+}
+
+function deleteNode(id){
+  builderNodes=builderNodes.filter(function(n){return n.id!==id;});
+  builderEdges=builderEdges.filter(function(e){return e.from!==id&&e.to!==id;});
+  if(selectedNode===id)selectedNode=null;
+  renderBuilder();updateNodeEditPanel(null);
+}
+
+function renderBuilder(){
+  var container=document.getElementById('builder-nodes');
+  container.innerHTML='';
+  var svgEl=document.getElementById('builder-svg');
+  svgEl.innerHTML='';
+  
+  // Draw edges
+  builderEdges.forEach(function(e){
+    var sNode=getNodeById(e.from),tNode=getNodeById(e.to);
+    if(!sNode||!tNode)return;
+    var sx=sNode.x+80,sy=sNode.y+56,tx=tNode.x+80,ty=tNode.y;
+    var mid=(sy+ty)/2;
+    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d','M '+sx+' '+sy+' C '+sx+' '+mid+', '+tx+' '+mid+', '+tx+' '+ty);
+    path.setAttribute('fill','none');path.setAttribute('stroke','#5eac2c');path.setAttribute('stroke-width','2');
+    path.setAttribute('marker-end','url(#b-arrow)');
+    svgEl.appendChild(path);
+  });
+  
+  // Arrow marker
+  var defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  var marker=document.createElementNS('http://www.w3.org/2000/svg','marker');
+  marker.setAttribute('id','b-arrow');marker.setAttribute('viewBox','0 0 10 10');
+  marker.setAttribute('refX',8);marker.setAttribute('refY',5);
+  marker.setAttribute('markerWidth',6);marker.setAttribute('markerHeight',6);
+  marker.setAttribute('orient','auto-start-reverse');
+  var mPath=document.createElementNS('http://www.w3.org/2000/svg','path');
+  mPath.setAttribute('d','M2 2L8 5L2 8');mPath.setAttribute('fill','none');
+  mPath.setAttribute('stroke','#5eac2c');mPath.setAttribute('stroke-width','1.5');
+  marker.appendChild(mPath);defs.appendChild(marker);svgEl.appendChild(defs);
+  
+  // Draw nodes
+  builderNodes.forEach(function(n){
+    var el=document.createElement('div');
+    el.className='builder-node'+(selectedNode===n.id?' selected':'')+(n.name==='Retest Requested'?' bottleneck':'');
+    el.style.left=n.x+'px';el.style.top=n.y+'px';el.style.background=n.col||'#fff';
+    el.setAttribute('data-nid', n.id); el.innerHTML='<span class="node-del" onclick="var p=this;while(p&&!p.dataset.nid)p=p.parentElement;deleteNode(p.dataset.nid)">×</span>'
+      +'<div class="node-title">'+ n.name+'</div>'
+      +'<div class="node-meta">'+n.role+' · '+n.dur+'m</div>'
+      +'<div class="port out" data-id="'+ n.id+'" title="Drag to connect"></div>';
+    el.addEventListener('mousedown',function(e){
+      if(e.target.classList.contains('port')||e.target.classList.contains('node-del'))return;
+      if(connectMode){
+        if(!connectFrom){connectFrom=n.id;el.style.borderColor='#5eac2c';document.getElementById('builder-status').textContent='Now click target node';}
+        else if(connectFrom!==n.id){
+          builderEdges.push({from:connectFrom,to:n.id});
+          connectFrom=null;connectMode=false;
+          document.getElementById('connect-btn').style.background='';
+          document.getElementById('connect-btn').style.color='';
+          document.getElementById('builder-status').textContent='Connection added';
+          renderBuilder();
+        }
+        return;
+      }
+      selectBuilderNode(n.id);
+      var startX=e.clientX-n.x,startY=e.clientY-n.y;
+      function onMove(me){n.x=me.clientX-startX;n.y=me.clientY-startY;el.style.left=n.x+'px';el.style.top=n.y+'px';renderBuilderEdgesOnly();}
+      function onUp(){document.removeEventListener('mousemove',onMove);document.removeEventListener('mouseup',onUp);renderBuilder();}
+      document.addEventListener('mousemove',onMove);
+      document.addEventListener('mouseup',onUp);
+      e.preventDefault();
+    });
+    container.appendChild(el);
+  });
+  updateBuilderStats();
+}
+
+function renderBuilderEdgesOnly(){
+  var svgEl=document.getElementById('builder-svg');
+  svgEl.innerHTML='';
+  var defs=document.createElementNS('http://www.w3.org/2000/svg','defs');
+  var marker=document.createElementNS('http://www.w3.org/2000/svg','marker');
+  marker.setAttribute('id','b-arrow');marker.setAttribute('viewBox','0 0 10 10');
+  marker.setAttribute('refX',8);marker.setAttribute('refY',5);
+  marker.setAttribute('markerWidth',6);marker.setAttribute('markerHeight',6);
+  marker.setAttribute('orient','auto-start-reverse');
+  var mPath=document.createElementNS('http://www.w3.org/2000/svg','path');
+  mPath.setAttribute('d','M2 2L8 5L2 8');mPath.setAttribute('fill','none');
+  mPath.setAttribute('stroke','#5eac2c');mPath.setAttribute('stroke-width','1.5');
+  marker.appendChild(mPath);defs.appendChild(marker);svgEl.appendChild(defs);
+  builderEdges.forEach(function(e){
+    var sNode=getNodeById(e.from),tNode=getNodeById(e.to);
+    if(!sNode||!tNode)return;
+    var sx=sNode.x+80,sy=sNode.y+56,tx=tNode.x+80,ty=tNode.y;
+    var mid=(sy+ty)/2;
+    var path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d','M '+sx+' '+sy+' C '+sx+' '+mid+', '+tx+' '+mid+', '+tx+' '+ty);
+    path.setAttribute('fill','none');path.setAttribute('stroke','#5eac2c');path.setAttribute('stroke-width','2');
+    path.setAttribute('marker-end','url(#b-arrow)');
+    svgEl.appendChild(path);
+  });
+}
+
+function selectBuilderNode(id){
+  selectedNode=id;
+  renderBuilder();
+  updateNodeEditPanel(getNodeById(id));
+}
+
+function updateNodeEditPanel(n){
+  var el=document.getElementById('node-edit-content');
+  if(!n){el.innerHTML='<div style="font-size:12px;color:var(--textm);padding:12px 0">No node selected</div>';return;}
+  el.innerHTML=
+    '<div class="field-group"><div class="field-label">Activity Name</div><input class="field-input" id="ep-name" value="'+n.name+'"/></div>'
+    +'<div class="field-group"><div class="field-label">Assigned Role</div><select class="field-input" id="ep-role"><option>Operator</option><option>Lab Tech</option><option>QA Manager</option><option>Supervisor</option></select></div>'
+    +'<div class="field-group"><div class="field-label">Expected Duration (min)</div><input class="field-input" type="number" id="ep-dur" value="'+n.dur+'"/></div>'
+    +'<div style="margin-top:8px;display:flex;gap:8px"><button class="tb-btn danger" id="del-selected-btn">Delete Node</button><button class="tb-btn" id="apply-node-btn">Apply Changes</button></div>';
+  // Wire up events after render
+  setTimeout(function(){
+    var nameEl=document.getElementById('ep-name');if(nameEl)nameEl.addEventListener('input',function(){updateNodeProp(n.id,'name',this.value);});
+    var roleEl=document.getElementById('ep-role');if(roleEl){roleEl.value=n.role;roleEl.addEventListener('change',function(){updateNodeProp(n.id,'role',this.value);});}
+    var durEl=document.getElementById('ep-dur');if(durEl)durEl.addEventListener('input',function(){updateNodeProp(n.id,'dur',+this.value);});
+    var delBtn=document.getElementById('del-selected-btn');if(delBtn)delBtn.addEventListener('click',function(){deleteNode(n.id);});
+    var applyBtn=document.getElementById('apply-node-btn');if(applyBtn)applyBtn.addEventListener('click',function(){if(nameEl)updateNodeProp(n.id,'name',nameEl.value);});
+  },10);
+}
+
+function updateNodeProp(id,prop,val){
+  var n=getNodeById(id);if(n){n[prop]=val;}renderBuilder();}
+
+function builderConnectMode(){
+  connectMode=!connectMode;connectFrom=null;
+  var btn=document.getElementById('connect-btn');
+  btn.style.background=connectMode?'var(--green3)':''  ;
+  btn.style.color=connectMode?'#fff':'';
+  document.getElementById('builder-status').textContent=connectMode?'Click source node to start connection':'Connection mode off';
+}
+
+function clearBuilder(){builderNodes=[];builderEdges=[];selectedNode=null;connectMode=false;renderBuilder();updateNodeEditPanel(null);}
+
+function updateBuilderStats(){
+  document.getElementById('stat-nodes').textContent=builderNodes.length;
+  document.getElementById('stat-edges').textContent=builderEdges.length;
+  var total=builderNodes.reduce(function(s,n){return s+(+n.dur||0);},0);
+  document.getElementById('stat-time').textContent=total+' min ('+Math.round(total/60*10)/10+'h)';
+}
+
+function saveBuilderProcess(){
+  if(builderNodes.length===0){document.getElementById('builder-status').textContent='Nothing to save';return;}
+  var proc={id:'p'+(Date.now()),name:'Process '+(savedProcesses.length+1),nodes:JSON.parse(JSON.stringify(builderNodes)),edges:JSON.parse(JSON.stringify(builderEdges)),savedAt:new Date().toLocaleTimeString()};
+  savedProcesses.push(proc);
+  var h='';
+  savedProcesses.forEach(function(p,i){
+    h+='<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">';
+    h+='<div><div style="font-size:12px;font-weight:500">'+p.name+'</div><div style="font-size:10px;color:var(--textm);font-family:IBM Plex Mono,monospace">'+ p.nodes.length+' nodes · '+p.savedAt+'</div></div>';
+    h+='<button class="tb-btn" onclick="loadSavedProcess('+ i+')" style="padding:4px 10px;font-size:10px">Load</button></div>';
+  });
+  document.getElementById('saved-processes').innerHTML=h;
+  document.getElementById('builder-status').textContent='Process saved: '+proc.name;
+}
+
+function loadSavedProcess(i){
+  var p=savedProcesses[i];if(!p)return;
+  builderNodes=JSON.parse(JSON.stringify(p.nodes));
+  builderEdges=JSON.parse(JSON.stringify(p.edges));
+  renderBuilder();
+  document.getElementById('builder-status').textContent='Loaded: '+p.name;
+}
+
+function loadDefaultProcess(){
+  builderNodes=[
+    {id:'d1',name:'Sample Created',  role:'Operator',  dur:10, x:180,y:20,  col:'#e8f5ec'},
+    {id:'d2',name:'Sample Received', role:'Lab Tech',   dur:20, x:180,y:110, col:'#e8f5ec'},
+    {id:'d3',name:'Test Started',    role:'Lab Tech',   dur:15, x:180,y:200, col:'#fff8e8'},
+    {id:'d4',name:'Test Completed',  role:'Lab Tech',   dur:60, x:180,y:290, col:'#e8f5ec'},
+    {id:'d5',name:'Approval Pending',role:'QA Manager', dur:120,x:180,y:380, col:'#fff5e8'},
+    {id:'d6',name:'Approved',        role:'QA Manager', dur:5,  x:180,y:460, col:'#e8f5ec'},
+  ];
+  builderEdges=[{from:'d1',to:'d2'},{from:'d2',to:'d3'},{from:'d3',to:'d4'},{from:'d4',to:'d5'},{from:'d5',to:'d6'}];
+  renderBuilder();
+  document.getElementById('builder-status').textContent='Template loaded';
+}
+
+// ── COMPARISON ────────────────────────────────────────────────────────────────
+function renderComparison(){
+  // Mined process
+  var minedSteps=["Sample Created","Sample Received","Test Started","Test Completed","Approval Pending","Approved","Report Generated"];
+  var minedH='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  minedSteps.forEach(function(s,i){
+    minedH+='<div style="padding:7px 12px;background:#f0f9f4;border:1.5px solid #a8d5b5;border-radius:5px;font-size:11px;font-weight:500;color:#004e2b">'+ s+'</div>';
+    if(i<minedSteps.length-1)minedH+='<div style="display:flex;align-items:center;color:#8aaa8e;font-size:14px">→</div>';
+  });
+  minedH+='</div>';
+  document.getElementById('compare-mined-flow').innerHTML=minedH;
+
+  // Built process
+  var lastSaved=savedProcesses[savedProcesses.length-1];
+  if(lastSaved){
+    var builtH='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    lastSaved.nodes.forEach(function(n,i){
+      builtH+='<div style="padding:7px 12px;background:#fff8e8;border:1.5px solid #f5c87e;border-radius:5px;font-size:11px;font-weight:500;color:#b7770d">'+n.name+'</div>';
+      if(i<lastSaved.nodes.length-1)builtH+='<div style="display:flex;align-items:center;color:#8aaa8e;font-size:14px">→</div>';
+    });
+    builtH+='</div>';
+    document.getElementById('compare-built-flow').innerHTML=builtH;
+    document.getElementById('compare-built-meta').textContent='Process: '+lastSaved.name+' · '+lastSaved.nodes.length+' nodes';
+
+    // Deviations
+    var minedSet={};minedSteps.forEach(function(s){minedSet[s]=true;});
+    var builtSet={};lastSaved.nodes.forEach(function(n){builtSet[n.name]=true;});
+    var devH='';
+    // Steps in mined but not in built
+    minedSteps.forEach(function(s){
+      if(!builtSet[s])devH+='<div class="diff-item missing">✗ "'+s+'" found in real process but missing from design</div>';
+      else devH+='<div class="diff-item match">✓ "'+s+'" present in both processes</div>';
+    });
+    // Steps in built but not in mined
+    lastSaved.nodes.forEach(function(n){
+      if(!minedSet[n.name])devH+='<div class="diff-item extra">+ "'+n.name+'" in design but not observed in real data</div>';
+    });
+    document.getElementById('compare-deviations').innerHTML=devH||'<div style="color:var(--textm);font-size:12px;padding:12px 0">No deviations detected</div>';
+
+    // Timing comparison
+    var builtDurs=lastSaved.nodes.map(function(n){return n.dur;});
+    var minedDurs=[10,14,28,67,198,23,15].slice(0,lastSaved.nodes.length);
+    var compLabels=lastSaved.nodes.map(function(n){return n.name.split(' ')[0];});
+    var cv=document.getElementById('c-compare');
+    if(cv){
+      var dpr=window.devicePixelRatio||1;var w=cv.offsetWidth||400;var h=180;
+      cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';
+      var ctx=cv.getContext('2d');ctx.scale(dpr,dpr);ctx.clearRect(0,0,w,h);
+      var pad={t:10,r:10,b:38,l:52};
+      var cw=w-pad.l-pad.r,ch=h-pad.t-pad.b;
+      var allV=builtDurs.concat(minedDurs);
+      var mx=Math.max.apply(null,allV)*1.12;
+      var bw=(cw/compLabels.length)*0.25,gap=(cw/compLabels.length);
+      ctx.strokeStyle='#e0e8e2';ctx.lineWidth=0.5;
+      [0.25,0.5,0.75,1].forEach(function(f){var y=pad.t+ch-ch*f;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cw,y);ctx.stroke();ctx.fillStyle='#8aaa8e';ctx.font='10px monospace';ctx.textAlign='right';ctx.fillText(Math.round(mx*f),pad.l-4,y+4);});
+      compLabels.forEach(function(lbl,i){
+        var x=pad.l+i*gap;
+        ctx.fillStyle='#22883f';var bh1=(builtDurs[i]||0)/mx*ch;ctx.fillRect(x+gap*0.1,pad.t+ch-bh1,bw,bh1);
+        ctx.fillStyle='rgba(183,119,13,.7)';var bh2=(minedDurs[i]||0)/mx*ch;ctx.fillRect(x+gap*0.1+bw+2,pad.t+ch-bh2,bw,bh2);
+        ctx.fillStyle='#8aaa8e';ctx.font='10px monospace';ctx.textAlign='center';
+        var ml=Math.max(3,Math.floor(gap/6));ctx.fillText(lbl.length>ml?lbl.slice(0,ml-1)+'…':lbl,x+gap*0.5,pad.t+ch+16);
+      });
+      ctx.fillStyle='#22883f';ctx.fillRect(pad.l,h-8,10,8);ctx.fillStyle='#8aaa8e';ctx.font='10px monospace';ctx.textAlign='left';ctx.fillText('Designed',pad.l+14,h-1);
+      ctx.fillStyle='rgba(183,119,13,.7)';ctx.fillRect(pad.l+80,h-8,10,8);ctx.fillText('Actual (mined)',pad.l+94,h-1);
+    }
+  } else {
+    document.getElementById('compare-built-flow').innerHTML='<div style="font-size:12px;color:var(--textm);padding:12px 0">Go to Process Builder, create a process, and click Save.</div>';
+    document.getElementById('compare-deviations').innerHTML='<div style="font-size:12px;color:var(--textm)">Save a process in the Builder to compare.</div>';
+  }
+}
+
+// ── RECOMMENDATIONS ───────────────────────────────────────────────────────────
+function renderRecs(){
+  var h='';
+  D.recs.forEach(function(r){
+    var bc=r.s==='critical'?'#c0392b':r.s==='warning'?'#b7770d':'#22883f';
+    var bs=r.s==='critical'?'bc':r.s==='warning'?'bw':'bg';
+    h+='<div class="rec-card" style="border-left:3px solid '+ bc+'">';
+    h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><span class="badge '+ bs+'">'+ r.s+'</span><span class="badge bm">'+r.cat+'</span><span style="font-size:10px;color:var(--textd);font-family:IBM Plex Mono,monospace;margin-left:4px">'+ r.id+'</span></div>';
+    h+='<h3 style="font-size:14px;font-weight:500;margin:0 0 14px">'+r.title+'</h3>';
+    h+='<div class="rec-grid"><div class="rbox"><div class="rbox-lbl">Issue</div><div class="rbox-txt" style="color:'+(r.s==='critical'?'#c0392b':'#b7770d')+'">'+r.issue+'</div></div>';
+    h+='<div class="rbox"><div class="rbox-lbl">Cause</div><div class="rbox-txt">'+r.cause+'</div></div>';
+    h+='<div class="rbox"><div class="rbox-lbl">Action</div><div class="rbox-txt" style="color:#1a6b35">'+ r.action+'</div></div></div>';
+    h+='<div class="impact-row"><span style="font-size:9px;color:var(--textd);text-transform:uppercase;letter-spacing:.1em;margin-right:6px">Impact</span>'+r.impact+'</div></div>';
+  });
+  document.getElementById('rec-list').innerHTML=h;
+}
+
+// ── SAFARI-SAFE HELPERS ──────────────────────────────────────────────────────
+function uniq(arr){var seen={},out=[];for(var i=0;i<arr.length;i++){if(!seen[arr[i]]){seen[arr[i]]=1;out.push(arr[i]);}}return out;}
+function safeParse(s){
+  if(!s)return new Date(NaN);
+  var parts=s.trim().replace('T',' ').split(/[\s:\-]/);
+  if(parts.length>=6){return new Date(parseInt(parts[0]),parseInt(parts[1])-1,parseInt(parts[2]),parseInt(parts[3]),parseInt(parts[4]),parseInt(parts[5]));}
+  return new Date(s);
+}
+
+// ── CSV UPLOAD ────────────────────────────────────────────────────────────────
+function doUpload(input){
+  var f=input.files[0];if(!f)return;
+  var msg=document.getElementById('up-msg');
+  msg.style.display='block';msg.style.background='rgba(0,78,43,.08)';msg.style.color='#004e2b';
+  msg.textContent='Reading CSV...';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var text=e.target.result;
+      var parsed=parseCSV(text);
+      if(!parsed||parsed.rows.length<2)throw new Error('CSV appears empty');
+      msg.textContent='Analysing '+parsed.cases+' cases...';
+      setTimeout(function(){
+        try{
+          var result=analyseCSV(parsed);
+          applyData(result);
+          msg.style.background='rgba(0,78,43,.1)';
+          msg.textContent='✓ Loaded '+parsed.cases+' cases · dashboard updated';
+          setTimeout(function(){document.getElementById('um').classList.remove('open');},1400);
+        }catch(err2){msg.style.background='rgba(192,57,43,.08)';msg.style.color='#c0392b';msg.textContent='Error: '+err2.message;}
+      },50);
+    }catch(err){msg.style.background='rgba(192,57,43,.08)';msg.style.color='#c0392b';msg.textContent='Error: '+err.message;}
+  };
+  reader.readAsText(f);
+}
+
+function parseCSV(text){
+  var lines=text.trim().split('\n');if(lines.length<2)return null;
+  var hdr=lines[0].split(',').map(function(h){return h.trim().replace(/^"|"$/g,'');});
+  var ci=hdr.indexOf('case_id'),ai=hdr.indexOf('activity'),ti=hdr.indexOf('timestamp');
+  var ri=hdr.indexOf('resource'),pi=hdr.indexOf('plant'),si=hdr.indexOf('status');
+  if(ci<0||ai<0||ti<0)throw new Error('Missing columns: case_id, activity, timestamp');
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    var l=lines[i].trim();if(!l)continue;
+    var cols=l.split(',').map(function(c){return c.trim().replace(/^"|"$/g,'');});
+    rows.push({case_id:cols[ci]||'',activity:cols[ai]||'',timestamp:safeParse(cols[ti]||''),resource:ri>=0?(cols[ri]||''):'',plant:pi>=0?(cols[pi]||'Unknown'):'Unknown',status:si>=0?(cols[si]||''):''});
+  }
+  rows=rows.filter(function(r){return r.case_id&&r.activity&&r.timestamp&&!isNaN(r.timestamp.getTime())&&r.timestamp.getTime()>0;});
+  rows.sort(function(a,b){return a.timestamp-b.timestamp;});
+  var cases=uniq(rows.map(function(r){return r.case_id;}));
+  return{rows:rows,cases:cases.length,events:rows.length};
+}
+
+function analyseCSV(parsed){
+  var rows=parsed.rows;
+  var cases=uniq(rows.map(function(r){return r.case_id;}));
+  var plants=uniq(rows.map(function(r){return r.plant;}));
+  var byCase={};
+  rows.forEach(function(r){if(!byCase[r.case_id])byCase[r.case_id]={rows:[]};byCase[r.case_id].rows.push(r);});
+  var cycleTimes=[];
+  cases.forEach(function(cid){var cr=byCase[cid].rows;var ts=cr.map(function(r){return r.timestamp.getTime();});byCase[cid].dur=(Math.max.apply(null,ts)-Math.min.apply(null,ts))/3600000;cycleTimes.push(byCase[cid].dur);});
+  cycleTimes.sort(function(a,b){return a-b;});
+  if(cycleTimes.length===0)throw new Error('No valid timestamps');
+  var avgCycle=cycleTimes.reduce(function(s,v){return s+v;},0)/cycleTimes.length;
+  var p90idx=Math.min(Math.floor(cycleTimes.length*.9),cycleTimes.length-1);
+  var p90Cycle=typeof cycleTimes[p90idx]==='number'?cycleTimes[p90idx]:0;
+  var maxCycle=typeof cycleTimes[cycleTimes.length-1]==='number'?cycleTimes[cycleTimes.length-1]:0;
+  var reworkCases=cases.filter(function(cid){return byCase[cid].rows.some(function(r){return r.activity==='Retest Requested';});});
+  var reworkRate=reworkCases.length/cases.length*100;
+  var actWaits={};
+  cases.forEach(function(cid){var cr=byCase[cid].rows.slice().sort(function(a,b){return a.timestamp-b.timestamp;});for(var i=0;i<cr.length-1;i++){var act=cr[i].activity;var wait=(cr[i+1].timestamp.getTime()-cr[i].timestamp.getTime())/60000;if(!actWaits[act])actWaits[act]=[];actWaits[act].push(wait);}});
+  var ACT_ORDER=['Sample Created','Sample Received','Test Started','Test Completed','Retest Requested','Approval Pending','Approved','Report Generated'];
+  var activity_stats=ACT_ORDER.map(function(a){var cnt=rows.filter(function(r){return r.activity===a;}).length;var waits=actWaits[a]||[];waits.sort(function(a,b){return a-b;});var avg=waits.length?waits.reduce(function(s,v){return s+v;},0)/waits.length:0;var p90=waits.length?waits[Math.floor(waits.length*.9)]||0:0;var mx=waits.length?waits[waits.length-1]:0;return{a:a,cnt:cnt,avg:parseFloat(avg.toFixed(1)),p90:parseFloat(p90.toFixed(1)),max:parseFloat(mx.toFixed(1)),col:'#22883f'};}).filter(function(a){return a.cnt>0;});
+  var buckets={'<2h':0,'2-4h':0,'4-6h':0,'6-8h':0,'8-12h':0,'12-24h':0,'>24h':0};
+  cycleTimes.forEach(function(h){if(h<2)buckets['<2h']++;else if(h<4)buckets['2-4h']++;else if(h<6)buckets['4-6h']++;else if(h<8)buckets['6-8h']++;else if(h<12)buckets['8-12h']++;else if(h<24)buckets['12-24h']++;else buckets['>24h']++;});
+  var plant_stats=plants.map(function(p){var pcases=cases.filter(function(cid){return byCase[cid].rows[0].plant===p;});var durs=pcases.map(function(cid){return byCase[cid].dur;});var avg=durs.reduce(function(s,v){return s+v;},0)/durs.length||0;var rw=pcases.filter(function(cid){return byCase[cid].rows.some(function(r){return r.activity==='Retest Requested';});}).length;return{p:p,cnt:pcases.length,hrs:parseFloat(avg.toFixed(2)),rw:parseFloat((rw/pcases.length*100).toFixed(1))};}).sort(function(a,b){return a.hrs-b.hrs;});
+  var rw_plants=plant_stats.map(function(p){var pcases=cases.filter(function(cid){return byCase[cid].rows[0].plant===p.p;});var rw=pcases.filter(function(cid){return byCase[cid].rows.some(function(r){return r.activity==='Retest Requested';});});return{p:p.p,rw:rw.length,tot:pcases.length,pct:parseFloat((rw.length/pcases.length*100).toFixed(1))};}).sort(function(a,b){return b.pct-a.pct;});
+  var bns=activity_stats.filter(function(a){return a.avg>0;}).slice().sort(function(a,b){return b.avg-a.avg;}).slice(0,5);
+  var slowest=cases.slice().sort(function(a,b){return byCase[b].dur-byCase[a].dur;}).slice(0,8).map(function(cid){var cr=byCase[cid].rows;return{id:cid,h:parseFloat(byCase[cid].dur.toFixed(1)),p:cr[0].plant,e:cr.length,r:cr.some(function(r){return r.activity==='Retest Requested';})};});
+  var allTs=rows.map(function(r){return r.timestamp.getTime();});
+  var minD=new Date(Math.min.apply(null,allTs)),maxD=new Date(Math.max.apply(null,allTs));
+  function fmt(d){return d.toISOString().slice(0,10);}
+  var retestCounts={1:0,2:0,3:0};
+  reworkCases.forEach(function(cid){var n=byCase[cid].rows.filter(function(r){return r.activity==='Retest Requested';}).length;if(n>=3)retestCounts[3]++;else if(n===2)retestCounts[2]++;else retestCounts[1]++;});
+  var multiRetest=retestCounts[2]+retestCounts[3];
+  var approvalStat=activity_stats.find(function(a){return a.a==='Approval Pending';});
+  var recs=[];
+  if(approvalStat&&approvalStat.avg/60>2)recs.push({id:'REC-001',s:approvalStat.avg/60>4?'critical':'warning',cat:'Bottleneck',title:'Approval Stage Delay',issue:'Approval Pending: '+(approvalStat.avg/60).toFixed(1)+'h avg (threshold 2h)',cause:'QA manager workload imbalance',action:'Assign backup approver · Set SLA alerts',impact:'Saving ~'+(approvalStat.avg/60/2).toFixed(1)+'h per sample'});
+  if(reworkRate>15)recs.push({id:'REC-002',s:reworkRate>25?'critical':'warning',cat:'Quality',title:'High Retest Rate',issue:reworkRate.toFixed(1)+'% retest rate (threshold 15%)',cause:'Testing inconsistency or equipment issues',action:'Audit procedures · Calibration checks',impact:'Eliminate rework for '+reworkCases.length+' cases'});
+  return{cases:cases.length,events:rows.length,avgCycle:parseFloat(avgCycle.toFixed(2)),p90Cycle:parseFloat(p90Cycle.toFixed(2)),maxCycle:parseFloat(maxCycle.toFixed(2)),reworkRate:parseFloat(reworkRate.toFixed(1)),reworkCases:reworkCases.length,multiRetest:multiRetest,plants:plants,dateStart:fmt(minD),dateEnd:fmt(maxD),activity_stats:activity_stats,bns:bns,plant_stats:plant_stats,rw_plants:rw_plants,dur:{l:Object.keys(buckets),v:[buckets['<2h'],buckets['2-4h'],buckets['4-6h'],buckets['6-8h'],buckets['8-12h'],buckets['12-24h'],buckets['>24h']]},slow:slowest,retestCounts:retestCounts,recs:recs};
+}
+
+function applyData(R){
+  D.acts=R.activity_stats;D.bns=R.bns;D.plants=R.plant_stats;D.dur=R.dur;D.slow=R.slow;D.rw_plants=R.rw_plants;D.recs=R.recs||D.recs;
+  // Update ticker
+  var tks=[R.cases.toLocaleString(),R.avgCycle.toFixed(1)+'h',R.reworkRate.toFixed(1)+'%',R.bns[0]?R.bns[0].a.split(' ')[0]:'—',R.p90Cycle.toFixed(1)+'h'];
+  ['tk-cases','tk-cycle','tk-rework','tk-bn','tk-p90'].forEach(function(id,i){var el=document.getElementById(id);if(el&&tks[i]!==undefined)el.textContent=tks[i];});
+  document.getElementById('tk-period').textContent=R.dateStart+' → '+R.dateEnd;
+  ['kpi-cases','kpi-cycle','kpi-rework'].forEach(function(id,i){var el=document.getElementById(id);if(el)el.textContent=[R.cases.toLocaleString(),R.avgCycle.toFixed(1)+'h',R.reworkRate.toFixed(1)+'%'][i];});
+  document.getElementById('ph-period').textContent='Ciments du Maroc · '+R.plants.length+' plants · '+R.dateStart+' → '+R.dateEnd+' · '+R.cases+' samples';
+  document.getElementById('dur-avg').textContent=R.avgCycle.toFixed(1)+'h';
+  document.getElementById('dur-p90').textContent=R.p90Cycle.toFixed(1)+'h';
+  document.getElementById('dur-max').textContent=R.maxCycle.toFixed(1)+'h';
+  document.getElementById('rw-cases').textContent=R.reworkCases;
+  document.getElementById('rw-rate').textContent=R.reworkRate.toFixed(1)+'%';
+  document.getElementById('rw-multi').textContent=R.multiRetest;
+  document.getElementById('rw-clean').textContent=(R.cases-R.reworkCases);
+  // Re-render
+  (function renderDashboard(){var mx=Math.max.apply(null,D.acts.map(function(a){return a.avg;}));var h='';D.acts.forEach(function(a){if(!a.avg)return;var isB=a.a==='Approval Pending',isR=a.a==='Retest Requested';var c=isB||isR?'#c0392b':a.avg>60?'#b7770d':'#22883f';var tc=isB||isR?'#c0392b':a.avg>60?'#b7770d':'#4a6b4e';h+='<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:'+(isB||isR?'#c0392b':'var(--textm)')+'">'+ a.a+'</span><span style="font-size:11px;color:'+tc+';font-family:IBM Plex Mono,monospace">'+a.avg.toFixed(0)+'m</span></div>'+mb(a.avg,mx,c)+'</div>';});document.getElementById('wait-bars').innerHTML=h;})();
+  var netAvg=R.avgCycle,mx2=1/Math.min.apply(null,D.plants.map(function(p){return p.hrs;}));var pt='';D.plants.forEach(function(p){var vs=(p.hrs-netAvg)/netAvg*100;var dc=p.hrs>netAvg*1.3?'#c0392b':p.hrs>netAvg?'#b7770d':'#22883f';pt+='<tr><td>'+p.p+'</td><td style="color:var(--textm)">'+p.cnt+'</td><td style="color:'+dc+';font-weight:500;font-family:IBM Plex Mono,monospace">'+ p.hrs.toFixed(1)+'h</td><td style="color:'+(p.rw>26?'#b7770d':'var(--text)')+';font-family:IBM Plex Mono,monospace">'+p.rw.toFixed(1)+'%</td><td style="color:'+(vs>0?'#c0392b':'#22883f')+';font-family:IBM Plex Mono,monospace;font-size:11px">'+(vs>0?'+':'')+vs.toFixed(1)+'%</td><td>'+ mb(1/p.hrs,mx2,dc,6)+'</td></tr>';});document.getElementById('plant-tbl').innerHTML=pt;
+  drawChart('c-dur',D.dur.l,D.dur.v,durColors(),190);
+  var rwh='';var rwmx=Math.max.apply(null,D.rw_plants.map(function(p){return p.pct;}));D.rw_plants.forEach(function(p){var c=p.pct>26?'#b7770d':'#c0392b';rwh+='<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px">'+p.p+'</span><span style="font-size:11px;font-family:IBM Plex Mono,monospace;color:'+(p.pct>26?'#b7770d':'var(--text)')+'">'+ p.rw+'/'+p.tot+' · '+p.pct.toFixed(1)+'%</span></div>'+ mb(p.pct,rwmx*1.1,c,8)+'</div>';});document.getElementById('rw-bars').innerHTML=rwh;
+  drawChart('c-ret',['1 retest','2 retests','3 retests'],[R.retestCounts[1]||0,R.retestCounts[2]||0,R.retestCounts[3]||0],['#c0392b','#b7770d','#c0392b'],160);
+  renderRecs();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.addEventListener('load',function(){
+  setTimeout(function(){
+    drawChart('c-dur',D.dur.l,D.dur.v,durColors(),190);
+    renderRecs();
+  },80);
+});
+</script>
+</body>
+</html>
